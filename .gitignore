@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments & Sensitive Keys
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# ChromaDB local vector storage
+chroma_db/
+
+# Pytest cache & test artifacts
+.pytest_cache/
+pytest-cache-files-*/
+
+# User documents (keep folder structure via .gitkeep)
+documents/*.pdf
+documents/*
+!documents/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db

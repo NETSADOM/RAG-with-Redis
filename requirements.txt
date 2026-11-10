@@ -1,0 +1,27 @@
+# PDF Extraction
+pypdf>=4.2.0
+
+# Embeddings
+sentence-transformers>=3.0.0
+
+# Vector Database
+chromadb>=0.5.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# HTTP client for Ollama API
+requests>=2.31.0
+
+# Testing
+pytest>=8.0.0
+
+# Web Application & API
+fastapi>=0.110.0
+uvicorn>=0.28.0
+python-multipart>=0.0.9
+
+# Redis Caching
+redis>=5.0.0
+fakeredis>=2.20.0
+

@@ -10,11 +10,6 @@ Features:
 
 import os
 from pathlib import Path
-
-# Ensure fast offline model loading without HuggingFace DNS retry hangs
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware

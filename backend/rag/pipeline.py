@@ -101,6 +101,90 @@ class CustomerSupportRAGPipeline:
             self.hybrid_retriever = HybridRetriever(self.bm25_retriever, self.dense_retriever)
         return self.kb_manager.get_collection_revision()
 
+    def stage_and_update_policy(self, chunk_id: str, new_text: str) -> Dict[str, Any]:
+        """
+        Safe, Retryable Policy Update:
+        1. Captures old_version before applying changes.
+        2. Stages the update in memory and builds replacement indexes (BM25, Dense, Hybrid) first.
+        3. Only when index construction succeeds, persists changes to disk and activates the new revision.
+        If rebuilding fails, disk and memory remain completely untouched and safe to retry.
+        """
+        old_version = self.kb_manager.get_collection_revision()
+        kb_path = self.kb_manager.kb_path
+
+        raw_content = kb_path.read_text(encoding="utf-8")
+        staged_data = json.loads(raw_content)
+
+        updated = False
+        target_doc_id = ""
+        old_text = ""
+        for doc in staged_data.get("documents", []):
+            for c in doc.get("chunks", []):
+                if c.get("chunk_id") == chunk_id:
+                    old_text = c.get("text", "")
+                    c["text"] = new_text
+                    updated = True
+                    target_doc_id = doc.get("doc_id", "")
+                    break
+            if updated:
+                break
+
+        if not updated:
+            raise ValueError(f"Chunk '{chunk_id}' not found in knowledge base.")
+
+        # Construct staged chunks in memory
+        staged_chunks: List[KBChunk] = []
+        for doc in staged_data.get("documents", []):
+            for c in doc.get("chunks", []):
+                staged_chunks.append(
+                    KBChunk(
+                        chunk_id=c["chunk_id"],
+                        doc_id=doc["doc_id"],
+                        title=c["title"],
+                        section=c["section"],
+                        source_ref=c.get("source_ref", doc.get("source_ref", "")),
+                        text=c["text"],
+                        page_number=c.get("page_number", 1),
+                        source_url=c.get("source_url", ""),
+                        doc_version=doc.get("version", "v1.0"),
+                    )
+                )
+
+        # 3. Build replacement retrieval indexes in memory FIRST
+        new_bm25 = BM25Retriever(staged_chunks)
+        new_dense = None
+        new_hybrid = None
+        if self.dense_retriever is not None:
+            new_dense = DenseRetriever(staged_chunks, model_name=self.dense_retriever.model_name)
+            new_hybrid = HybridRetriever(new_bm25, new_dense)
+
+        # 4. Replacement indexes built successfully! Now write safely to disk and activate revision
+        temp_path = kb_path.with_suffix(".json.tmp")
+        temp_path.write_text(json.dumps(staged_data, indent=2), encoding="utf-8")
+        temp_path.replace(kb_path)
+
+        # Activate active managers and indexes
+        self.kb_manager.load()
+        new_version = self.kb_manager.get_collection_revision()
+        self.bm25_retriever = new_bm25
+        if new_dense:
+            self.dense_retriever = new_dense
+            self.hybrid_retriever = new_hybrid
+
+        logger.info(
+            f"[Pipeline] Policy update activated safely for doc '{target_doc_id}', chunk '{chunk_id}'. "
+            f"Version transition: {old_version} -> {new_version}"
+        )
+
+        return {
+            "chunk_id": chunk_id,
+            "doc_id": target_doc_id,
+            "old_version": old_version,
+            "new_version": new_version,
+            "old_text": old_text,
+            "new_text": new_text,
+        }
+
     def answer_question(
         self,
         question: str,
@@ -241,7 +325,7 @@ class CustomerSupportRAGPipeline:
         ):
             try:
                 query_vec = None
-                if self.dense_retriever:
+                if getattr(self.cache, "semantic_caching_enabled", False) and self.dense_retriever:
                     query_vec = self.dense_retriever.model.encode([clean_q], normalize_embeddings=True, show_progress_bar=False)[0].tolist()
 
                 self.cache.set_answer(

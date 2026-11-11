@@ -11,7 +11,7 @@ Features:
 import os
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -38,6 +38,31 @@ app.add_middleware(
 
 # Initialize pipeline once at application startup
 pipeline = CustomerSupportRAGPipeline()
+
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "novacart-admin-key-2026")
+
+
+def verify_admin_access(
+    x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
+    authorization: Optional[str] = Header(None, alias="Authorization"),
+):
+    """
+    Protect administrative endpoints from unauthorized access.
+    Accepts X-Admin-Token or Bearer Authorization header.
+    """
+    token = x_admin_token
+    if not token and authorization:
+        if authorization.startswith("Bearer "):
+            token = authorization[7:].strip()
+        else:
+            token = authorization.strip()
+
+    if not token or token != ADMIN_API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: Valid admin credentials required for this administrative operation.",
+        )
+    return True
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend" / "public"
 
@@ -70,6 +95,7 @@ async def health_check():
 
 
 @app.post("/api/chat", response_model=Dict[str, Any])
+@app.post("/api/query", response_model=Dict[str, Any])
 async def handle_customer_chat(request: ChatRequest):
     """
     Primary Customer Support Chat Endpoint.
@@ -122,42 +148,36 @@ async def get_cache_metrics():
     return pipeline.cache.get_metrics()
 
 
-@app.post("/api/cache/clear")
+@app.post("/api/cache/clear", dependencies=[Depends(verify_admin_access)])
 async def clear_cache():
-    """Flush all cached customer support answers."""
+    """Flush NovaCart cached customer support answers."""
     success = pipeline.cache.clear()
-    return {"message": "Redis answer cache successfully cleared.", "success": success}
+    return {"message": "NovaCart answer cache successfully cleared.", "success": success}
 
 
-@app.post("/api/kb/update-policy")
+@app.post("/api/kb/update-policy", dependencies=[Depends(verify_admin_access)])
 async def update_sample_policy(request: UpdatePolicyRequest):
     """
-    Demonstrates Policy-Aware Cache Invalidation:
-    Updates a policy chunk, re-computes the KB version hash, and selectively
-    purges cached answers that cite the affected document.
+    Safe, Retryable Policy Update & Revision Invalidation:
+    1. Stages update and builds replacement indexes in memory first.
+    2. Writes to disk only after index construction succeeds.
+    3. Captures old_version and new_version to document what changed.
+    4. Automatically invalidates old cache entries via revision bumping.
     """
     try:
-        # Determine doc_id for selective policy invalidation
-        chunk = next((c for c in pipeline.kb_manager.chunks if c.chunk_id == request.chunk_id), None)
-        doc_id = chunk.doc_id if chunk else ""
-
-        new_version = pipeline.kb_manager.update_document_chunk(
+        result = pipeline.stage_and_update_policy(
             chunk_id=request.chunk_id,
             new_text=request.new_policy_text,
         )
-        pipeline.reload_knowledge_base()
-
-        # Policy-aware invalidation of specific document
-        purged_count = 0
-        if doc_id:
-            purged_count = pipeline.cache.invalidate_by_doc_id(doc_id)
 
         return {
-            "message": f"Successfully updated chunk '{request.chunk_id}'.",
-            "doc_id": doc_id,
-            "purged_entries": purged_count,
-            "old_version": pipeline.kb_manager.version_hash,
-            "new_version_hash": new_version,
+            "message": f"Successfully updated policy chunk '{request.chunk_id}'.",
+            "doc_id": result["doc_id"],
+            "chunk_id": result["chunk_id"],
+            "old_version": result["old_version"],
+            "new_version": result["new_version"],
+            "old_text": result["old_text"],
+            "new_text": result["new_text"],
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

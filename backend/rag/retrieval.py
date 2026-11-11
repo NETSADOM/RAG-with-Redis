@@ -6,11 +6,6 @@ Implements:
 3. Reciprocal Rank Fusion (RRF) Hybrid Merger
 """
 
-import os
-# Ensure instant offline local model loading from cache
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-
 import math
 import re
 import json
@@ -241,7 +236,10 @@ class DenseRetriever:
         from sentence_transformers import SentenceTransformer
         self.chunks = chunks
         self.model_name = model_name
-        self.model = SentenceTransformer(model_name)
+        try:
+            self.model = SentenceTransformer(model_name, local_files_only=True)
+        except Exception:
+            self.model = SentenceTransformer(model_name)
 
         # Precompute normalized embeddings for all chunks once at startup
         texts = [f"{c.title}: {c.text}" for c in self.chunks]

@@ -409,3 +409,96 @@ def test_12_ef08_regression_rejects_tracking_passage_for_cutoff_time():
     assert top_cite["is_validated"] is True
     assert ans_correct.citation_validation_passed is True
 
+
+# --------------------------------------------------------------------------
+# Test 13: Admin endpoint security (cache clear & policy update)
+# --------------------------------------------------------------------------
+def test_13_admin_endpoints_protected_with_auth_token():
+    from fastapi.testclient import TestClient
+    from backend.main import app
+
+    client = TestClient(app)
+
+    # 1. Clear cache without auth -> 401
+    resp_unauth = client.post("/api/cache/clear")
+    assert resp_unauth.status_code == 401
+    assert "Unauthorized" in resp_unauth.json()["detail"]
+
+    # 2. Clear cache with invalid token -> 401
+    resp_bad = client.post("/api/cache/clear", headers={"X-Admin-Token": "invalid_admin_secret"})
+    assert resp_bad.status_code == 401
+
+    # 3. Clear cache with valid token -> 200
+    resp_ok = client.post("/api/cache/clear", headers={"X-Admin-Token": "novacart-admin-key-2026"})
+    assert resp_ok.status_code == 200
+    assert resp_ok.json()["success"] is True
+
+    # 4. Policy update without auth -> 401
+    update_payload = {
+        "chunk_id": "refunds_returns_c1",
+        "new_policy_text": "Updated return window text for testing.",
+    }
+    resp_policy_unauth = client.post("/api/kb/update-policy", json=update_payload)
+    assert resp_policy_unauth.status_code == 401
+
+
+# --------------------------------------------------------------------------
+# Test 14: Policy updates safe to retry & captures version transition
+# --------------------------------------------------------------------------
+def test_14_policy_updates_safe_to_retry_and_rebuilds_indexes(mock_pipeline, tmp_path):
+    # Setup mock pipeline with a temporary knowledge base file
+    import json
+    kb_file = tmp_path / "knowledge_base.json"
+    kb_content = {
+        "company_name": "NovaCart Test",
+        "version": "1.0.0",
+        "documents": [
+            {
+                "doc_id": "doc_test_1",
+                "title": "Test Policy",
+                "version": "v1.0",
+                "source_ref": "Page 1, Doc T-1",
+                "chunks": [
+                    {
+                        "chunk_id": "test_c1",
+                        "title": "Test Chunk 1",
+                        "section": "General",
+                        "page_number": 1,
+                        "source_ref": "Page 1",
+                        "source_url": "",
+                        "text": "Original return period is 30 days.",
+                    }
+                ],
+            }
+        ],
+    }
+    kb_file.write_text(json.dumps(kb_content), encoding="utf-8")
+
+    from backend.rag.retrieval import KnowledgeBaseManager
+    real_kb_mgr = KnowledgeBaseManager(kb_path=str(kb_file))
+    mock_pipeline.kb_manager = real_kb_mgr
+
+    # Re-initialize bm25 with test chunks
+    mock_pipeline.bm25_retriever = BM25Retriever(real_kb_mgr.chunks)
+
+    # 1. Invalid chunk update should fail without modifying the file or state
+    with pytest.raises(ValueError):
+        mock_pipeline.stage_and_update_policy(
+            chunk_id="nonexistent_chunk_id",
+            new_text="Some text",
+        )
+    assert "Original return period is 30 days." in kb_file.read_text(encoding="utf-8")
+
+    # 2. Valid update: stages, builds replacement indexes, and activates
+    res = mock_pipeline.stage_and_update_policy(
+        chunk_id="test_c1",
+        new_text="Updated return period is now 45 days.",
+    )
+
+    assert res["chunk_id"] == "test_c1"
+    assert res["old_version"] != res["new_version"]
+    assert "45 days" in res["new_text"]
+    assert "30 days" in res["old_text"]
+    assert "Updated return period is now 45 days." in kb_file.read_text(encoding="utf-8")
+    assert mock_pipeline.bm25_retriever.chunks[0].text == "Updated return period is now 45 days."
+

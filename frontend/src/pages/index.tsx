@@ -160,7 +160,10 @@ export default function Home() {
     try {
       const res = await fetch("/api/kb/update-policy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Admin-Token": "novacart-admin-key-2026",
+        },
         body: JSON.stringify({
           chunk_id: "ret_01",
           new_policy_text: `NovaCart standard return window: Customers may initiate a return within ${days} calendar days of package delivery for a full refund to original payment method. Items must be unworn and in original condition.`,
@@ -179,7 +182,12 @@ export default function Home() {
 
   const handleClearCache = async () => {
     try {
-      const res = await fetch("/api/cache/clear", { method: "POST" });
+      const res = await fetch("/api/cache/clear", { 
+        method: "POST",
+        headers: {
+          "X-Admin-Token": "novacart-admin-key-2026",
+        },
+      });
       if (res.ok) {
         showToast("Redis answer cache flushed successfully.");
         fetchMetrics();

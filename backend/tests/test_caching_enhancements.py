@@ -221,3 +221,39 @@ def test_lfu_eviction_policy_configured(clean_cache):
     assert clean_cache.eviction_policy == "allkeys-lfu"
     metrics = clean_cache.get_metrics()
     assert metrics["eviction_policy"] == "allkeys-lfu"
+
+
+def test_clear_cache_preserves_unrelated_redis_keys(clean_cache):
+    """
+    Verify CustomerSupportCache.clear() removes only NovaCart keys (cs_rag:*),
+    preserving unrelated application keys stored in the same Redis database.
+    """
+    # 1. Store a NovaCart customer support answer
+    clean_cache.set_answer(
+        query="How long do I have to return an item?",
+        kb_version="v1.0.0",
+        model="gpt-4o-mini",
+        answer="You have 30 days to return items.",
+        sources=[{"doc_id": "doc_returns", "title": "Return Policy"}],
+    )
+
+    # 2. Store an unrelated key in the same Redis client
+    unrelated_key = "user_session:9948:auth"
+    clean_cache._client.set(unrelated_key, "active_user_jwt_token_payload")
+
+    # Verify both exist
+    _, hit = clean_cache.get_answer("How long do I have to return an item?", "v1.0.0", "gpt-4o-mini")
+    assert hit is True
+    assert clean_cache._client.get(unrelated_key) == "active_user_jwt_token_payload"
+
+    # 3. Clear the cache
+    cleared = clean_cache.clear()
+    assert cleared is True
+
+    # 4. Verify NovaCart answer is purged (MISS)
+    _, hit_after = clean_cache.get_answer("How long do I have to return an item?", "v1.0.0", "gpt-4o-mini")
+    assert hit_after is False
+
+    # 5. Verify the unrelated key SURVIVED untouched!
+    unrelated_val = clean_cache._client.get(unrelated_key)
+    assert unrelated_val == "active_user_jwt_token_payload"

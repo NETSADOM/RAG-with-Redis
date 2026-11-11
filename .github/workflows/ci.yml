@@ -36,6 +36,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: ${{ runner.os }}-hf-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-hf-
+
+      - name: Pre-provision SentenceTransformer and CrossEncoder models
+        run: |
+          python -c "from sentence_transformers import SentenceTransformer, CrossEncoder; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
+
       - name: Verify Redis Connection
         run: |
           python -c "import redis; r = redis.Redis.from_url('redis://localhost:6379/0'); print('Redis ping:', r.ping())"

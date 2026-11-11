@@ -472,7 +472,10 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/api/kb/update-policy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Admin-Token": "novacart-admin-key-2026",
+        },
         body: JSON.stringify(updatePayload),
       });
 
@@ -497,7 +500,12 @@ document.addEventListener("DOMContentLoaded", () => {
   clearCacheBtn.addEventListener("click", async () => {
     clearCacheBtn.disabled = true;
     try {
-      const res = await fetch("/api/cache/clear", { method: "POST" });
+      const res = await fetch("/api/cache/clear", { 
+        method: "POST",
+        headers: {
+          "X-Admin-Token": "novacart-admin-key-2026",
+        },
+      });
       if (!res.ok) throw new Error("Cache purge failed");
       showToast("Redis answer cache flushed successfully.", "info");
       await refreshTelemetry();

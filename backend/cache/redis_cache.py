@@ -317,6 +317,9 @@ class CustomerSupportCache:
         source_titles = list(dict.fromkeys(s.get("title", "") for s in sources if s.get("title")))
         source_chunk_ids = [s.get("chunk_id", "") for s in sources if s.get("chunk_id")]
 
+        # Only store embedding and maintain semantic index if semantic caching is enabled
+        effective_query_embedding = query_embedding if self.semantic_caching_enabled else None
+
         payload = {
             "query": query,
             "normalized_query": self.normalize_query(query),
@@ -327,7 +330,7 @@ class CustomerSupportCache:
             "sources": sources,
             "knowledge_base_version": kb_version,
             "model": model,
-            "query_embedding": query_embedding,
+            "query_embedding": effective_query_embedding,
             "access_count": 1,  # Initialize LFU frequency
             "cached_at": time.time(),
             "created_at_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -340,14 +343,10 @@ class CustomerSupportCache:
             else:
                 self._client.set(key, serialized)
 
-            # Register key in KB semantic index
-            index_key = f"{INDEX_PREFIX}{kb_version}"
-            self._client.sadd(index_key, key)
-
-            # Register key under each cited document ID for policy-aware invalidation
-            for doc_id in source_doc_ids:
-                doc_idx = f"{DOC_PREFIX}{doc_id}"
-                self._client.sadd(doc_idx, key)
+            # Register key in KB semantic index ONLY if semantic caching is active
+            if self.semantic_caching_enabled:
+                index_key = f"{INDEX_PREFIX}{kb_version}"
+                self._client.sadd(index_key, key)
 
             return True
 
@@ -386,11 +385,23 @@ class CustomerSupportCache:
         self.total_miss_latency_ms += latency_ms
 
     def clear(self) -> bool:
-        """Purge all cached keys from Redis."""
+        """
+        Purge only NovaCart's answer and index keys from Redis.
+        Preserves unrelated keys stored in the database.
+        """
         if not self.is_available:
             return False
         try:
-            self._client.flushdb()
+            patterns = [f"{KEY_PREFIX}*", f"{INDEX_PREFIX}*", f"{DOC_PREFIX}*", "cs_rag:*"]
+            keys_to_delete = set()
+            for pattern in patterns:
+                matched = self._client.keys(pattern)
+                if matched:
+                    keys_to_delete.update(matched)
+
+            if keys_to_delete:
+                self._client.delete(*keys_to_delete)
+
             self.exact_hits = 0
             self.semantic_hits = 0
             self.misses = 0
@@ -398,7 +409,7 @@ class CustomerSupportCache:
             self.total_miss_latency_ms = 0.0
             return True
         except Exception as e:
-            logger.warning(f"[Cache] Flush failed: {e}")
+            logger.warning(f"[Cache] Scoped clear failed: {e}")
             return False
 
     def get_metrics(self) -> Dict[str, Any]:
@@ -413,12 +424,9 @@ class CustomerSupportCache:
         total_keys = 0
         if self.is_available and self._client:
             try:
-                total_keys = self._client.dbsize()
+                total_keys = len(self._client.keys(f"{KEY_PREFIX}*"))
             except Exception:
-                try:
-                    total_keys = len(self._client.keys(f"{KEY_PREFIX}*"))
-                except Exception:
-                    total_keys = 0
+                total_keys = 0
 
         estimated_cost_saved_usd = round(total_hits * 0.0004, 4)
 

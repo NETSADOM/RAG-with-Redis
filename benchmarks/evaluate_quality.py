@@ -16,10 +16,6 @@ import sys
 from pathlib import Path
 from typing import List, Dict, Any
 
-# Ensure instant offline local model loading
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
-
 # Ensure project root is in sys.path
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -118,6 +114,15 @@ def run_quality_evaluation():
             category_metrics["unsupported"]["latencies"].append(resp.latency_ms)
         else:
             supportedness = 1.0 if (resp.is_supported and len(resp.citations) > 0) else 0.0
+
+            # Answer-level check for EF-08: require answer to contain overnight cutoff (1:00 PM EST) with correct supporting chunk
+            if q_id == "EF-08":
+                ans_lower = resp.answer.lower()
+                has_cutoff_fact = "1:00 pm" in ans_lower or "1:00pm" in ans_lower or "1 pm" in ans_lower
+                has_supporting_chunk = any(c.get("chunk_id") == "shipping_delivery_c1" for c in resp.citations)
+                if not (has_cutoff_fact and has_supporting_chunk):
+                    supportedness = 0.0
+
             category_metrics[cat]["count"] += 1
             category_metrics[cat]["recall"].append(retrieval_recall)
             category_metrics[cat]["citation_acc"].append(citation_accuracy)

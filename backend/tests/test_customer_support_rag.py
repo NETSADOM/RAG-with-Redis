@@ -65,6 +65,7 @@ def mock_pipeline(mock_kb_chunks):
     kb_mgr = MagicMock(spec=KnowledgeBaseManager)
     kb_mgr.chunks = mock_kb_chunks
     kb_mgr.version_hash = "kb_hash_v100"
+    kb_mgr.get_collection_revision.return_value = "kb_hash_v100"
 
     # Cache (in-memory emulator)
     cache = CustomerSupportCache(use_fallback=True)
@@ -256,6 +257,7 @@ def test_8_cached_answers_invalid_after_kb_update(mock_pipeline):
 
     # 3. Simulate knowledge base policy update -> version hash changes
     mock_pipeline.kb_manager.version_hash = "kb_hash_v200_updated"
+    mock_pipeline.kb_manager.get_collection_revision.return_value = "kb_hash_v200_updated"
     mock_pipeline.generator.generate.return_value = CustomerSupportAnswer(
         question=query,
         answer="Our updated policy allows 45 days for returns.",

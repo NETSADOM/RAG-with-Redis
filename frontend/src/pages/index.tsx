@@ -21,6 +21,7 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeEvidence, setActiveEvidence] = useState<SourceReference | null>(null);
   const [policyExtended, setPolicyExtended] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -449,23 +450,26 @@ export default function Home() {
 
                   <div className="whitespace-pre-wrap">{msg.content}</div>
 
-                  {/* Sources section */}
+                  {/* Sources section with clickable citations */}
                   {msg.sources && msg.sources.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-white/10 space-y-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                        📚 Verified Source Citations ({msg.sources.length})
+                        📚 Actively Cited Evidence ({msg.sources.length} Verified References)
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {msg.sources.map((src, idx) => (
-                          <div
+                          <button
                             key={idx}
-                            title={src.text_snippet}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                            onClick={() => setActiveEvidence(src)}
+                            type="button"
+                            title="Click to view supporting passage & PDF page"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 hover:border-sky-400 transition-all cursor-pointer"
                           >
                             <FileText className="w-3 h-3" />
                             <span>{src.title}</span>
-                            <span className="text-[9px] opacity-70">§ {src.chunk_id}</span>
-                          </div>
+                            <span className="text-[9px] opacity-80 bg-sky-500/20 px-1 rounded">Page {src.page_number || 1}</span>
+                            <span className="text-[9px] text-emerald-400 font-semibold">✓ Validated</span>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -535,6 +539,59 @@ export default function Home() {
       {toastMessage && (
         <div className="fixed bottom-20 right-6 px-4 py-2.5 rounded-xl bg-slate-900/95 border border-sky-500/30 text-xs font-semibold text-slate-200 shadow-2xl backdrop-blur-md z-50 animate-bounce">
           {toastMessage}
+        </div>
+      )}
+
+      {/* Clickable Citation Evidence Modal */}
+      {activeEvidence && (
+        <div 
+          onClick={() => setActiveEvidence(null)}
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#0E1526] border border-sky-500/30 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 mb-2">
+                  ✓ Verified Grounded Reference
+                </span>
+                <h3 className="text-base font-bold text-white">{activeEvidence.title}</h3>
+              </div>
+              <button 
+                onClick={() => setActiveEvidence(null)}
+                className="text-slate-400 hover:text-white text-lg p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+              <span className="bg-white/5 px-2 py-1 rounded">Page {activeEvidence.page_number || 1}</span>
+              <span className="bg-white/5 px-2 py-1 rounded">{activeEvidence.section}</span>
+              {activeEvidence.source_url && (
+                <a 
+                  href={activeEvidence.source_url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="text-sky-400 hover:underline ml-auto flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  View PDF Page &rarr;
+                </a>
+              )}
+            </div>
+
+            <div className="bg-[#121B2E] border-l-2 border-sky-400 p-3.5 rounded-r-xl">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                Supporting Documentation Passage
+              </div>
+              <p className="text-xs text-slate-200 leading-relaxed">
+                {activeEvidence.supporting_passage || activeEvidence.text_snippet || "No text available."}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </>

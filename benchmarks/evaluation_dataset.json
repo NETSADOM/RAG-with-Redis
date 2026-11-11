@@ -1,0 +1,363 @@
+[
+  {
+    "id": "EF-01",
+    "category": "exact_fact",
+    "question": "How many days do I have to return an item to NovaCart for a refund?",
+    "expected_doc_ids": ["doc_refunds_returns"],
+    "expected_chunk_ids": ["refunds_returns_c1"],
+    "expected_pages": [1],
+    "ground_truth": "Customers have a 30-day return policy for most physical items starting from the delivery date."
+  },
+  {
+    "id": "EF-02",
+    "category": "exact_fact",
+    "question": "What items are strictly non-returnable under your return policy?",
+    "expected_doc_ids": ["doc_refunds_returns"],
+    "expected_chunk_ids": ["refunds_returns_c1"],
+    "expected_pages": [1],
+    "ground_truth": "Opened personal hygiene goods, perishable food items, gift cards, and downloadable software licenses are strictly non-returnable unless defective."
+  },
+  {
+    "id": "EF-03",
+    "category": "exact_fact",
+    "question": "How much is deducted for a prepaid return shipping label if I return an item because I changed my mind?",
+    "expected_doc_ids": ["doc_refunds_returns"],
+    "expected_chunk_ids": ["refunds_returns_c2"],
+    "expected_pages": [1],
+    "ground_truth": "A flat deduction of $5.99 is taken from your refund total for customer preference or change of mind returns."
+  },
+  {
+    "id": "EF-04",
+    "category": "exact_fact",
+    "question": "Do you charge a restocking fee on apparel or high-value electronics?",
+    "expected_doc_ids": ["doc_refunds_returns"],
+    "expected_chunk_ids": ["refunds_returns_c2"],
+    "expected_pages": [1],
+    "ground_truth": "NovaCart does not charge restocking fees on apparel, but high-value electronics opened and returned without defect are subject to a 10% open-box restocking fee."
+  },
+  {
+    "id": "EF-05",
+    "category": "exact_fact",
+    "question": "How long does warehouse inspection take once my returned package arrives?",
+    "expected_doc_ids": ["doc_refunds_returns"],
+    "expected_chunk_ids": ["refunds_returns_c3"],
+    "expected_pages": [2],
+    "ground_truth": "Inspection takes 2 to 3 business days once the returned package reaches the warehouse."
+  },
+  {
+    "id": "EF-06",
+    "category": "exact_fact",
+    "question": "How many days does it take for a refund to show on a credit or debit card?",
+    "expected_doc_ids": ["doc_refunds_returns"],
+    "expected_chunk_ids": ["refunds_returns_c3"],
+    "expected_pages": [2],
+    "ground_truth": "Funds typically appear on credit or debit cards within 3 to 5 business days after refund initiation."
+  },
+  {
+    "id": "EF-07",
+    "category": "exact_fact",
+    "question": "What is the cost of standard shipping and what is the free shipping threshold?",
+    "expected_doc_ids": ["doc_shipping_delivery"],
+    "expected_chunk_ids": ["shipping_delivery_c1"],
+    "expected_pages": [1],
+    "ground_truth": "Standard Shipping costs $4.99 or is completely free on all orders totaling $50.00 or more before taxes."
+  },
+  {
+    "id": "EF-08",
+    "category": "exact_fact",
+    "question": "What is the daily cutoff time for Overnight Priority delivery?",
+    "expected_doc_ids": ["doc_shipping_delivery"],
+    "expected_chunk_ids": ["shipping_delivery_c1"],
+    "expected_pages": [1],
+    "ground_truth": "Overnight Priority Delivery requires placing the order before 1:00 PM EST for next business day delivery."
+  },
+  {
+    "id": "EF-09",
+    "category": "exact_fact",
+    "question": "Can Expedited or Overnight shipping deliver to a PO Box?",
+    "expected_doc_ids": ["doc_shipping_delivery"],
+    "expected_chunk_ids": ["shipping_delivery_c2"],
+    "expected_pages": [2],
+    "ground_truth": "No, Expedited and Overnight deliveries require a physical street address; only Standard shipping can deliver to PO Boxes via USPS."
+  },
+  {
+    "id": "EF-10",
+    "category": "exact_fact",
+    "question": "Which international countries does NovaCart currently ship to?",
+    "expected_doc_ids": ["doc_shipping_delivery"],
+    "expected_chunk_ids": ["shipping_delivery_c2"],
+    "expected_pages": [2],
+    "ground_truth": "NovaCart supports international delivery to Canada, the United Kingdom, and the European Union."
+  },
+  {
+    "id": "EF-11",
+    "category": "exact_fact",
+    "question": "How long do I have to cancel an order after placing it on the website?",
+    "expected_doc_ids": ["doc_order_cancellation"],
+    "expected_chunk_ids": ["order_cancellation_c1"],
+    "expected_pages": [1],
+    "ground_truth": "Customers have a 30-minute self-service grace period immediately after order submission to cancel directly from their account dashboard."
+  },
+  {
+    "id": "EF-12",
+    "category": "exact_fact",
+    "question": "Can customer support change my delivery address after my order moves to processing?",
+    "expected_doc_ids": ["doc_order_cancellation"],
+    "expected_chunk_ids": ["order_cancellation_c2"],
+    "expected_pages": [1],
+    "ground_truth": "No, customer support cannot manually adjust shipping destinations once an order has progressed to Processing or Dispatched; changes must occur within the first 30 minutes."
+  },
+  {
+    "id": "EF-13",
+    "category": "exact_fact",
+    "question": "Within what timeframe must damaged or defective deliveries be reported?",
+    "expected_doc_ids": ["doc_damaged_missing"],
+    "expected_chunk_ids": ["damaged_missing_c1"],
+    "expected_pages": [1],
+    "ground_truth": "Damaged, shattered, or defective items must be reported within 48 hours of delivery confirmation."
+  },
+  {
+    "id": "EF-14",
+    "category": "exact_fact",
+    "question": "What should I do if a carrier marks my parcel as delivered but it is not at my door?",
+    "expected_doc_ids": ["doc_damaged_missing"],
+    "expected_chunk_ids": ["damaged_missing_c2"],
+    "expected_pages": [1],
+    "ground_truth": "Wait 24 hours as carriers sometimes scan in advance, check with neighbors/reception, and submit a Lost Parcel Claim within 7 days."
+  },
+  {
+    "id": "EF-15",
+    "category": "exact_fact",
+    "question": "What Buy Now Pay Later services are accepted and for what order totals?",
+    "expected_doc_ids": ["doc_payments_billing"],
+    "expected_chunk_ids": ["payments_billing_c1"],
+    "expected_pages": [1],
+    "ground_truth": "Klarna and Afterpay are accepted for orders between $35.00 and $1,500.00."
+  },
+  {
+    "id": "EF-16",
+    "category": "exact_fact",
+    "question": "How long is a password reset verification code valid?",
+    "expected_doc_ids": ["doc_account_security"],
+    "expected_chunk_ids": ["account_security_c1"],
+    "expected_pages": [1],
+    "ground_truth": "The 6-digit password reset verification code sent to your email expires in 15 minutes."
+  },
+  {
+    "id": "EF-17",
+    "category": "exact_fact",
+    "question": "What products are covered by the 1-Year Limited Hardware Warranty?",
+    "expected_doc_ids": ["doc_warranty_support"],
+    "expected_chunk_ids": ["warranty_support_c1"],
+    "expected_pages": [1],
+    "ground_truth": "All NovaCart branded consumer electronics, audio gear, and smart home hardware include a 1-Year Limited Manufacturer Warranty."
+  },
+  {
+    "id": "EF-18",
+    "category": "exact_fact",
+    "question": "Does the hardware warranty cover accidental drops, screen cracks, or water spills?",
+    "expected_doc_ids": ["doc_warranty_support"],
+    "expected_chunk_ids": ["warranty_support_c1"],
+    "expected_pages": [1],
+    "ground_truth": "No, the warranty does not cover accidental damage, liquid spills, cracked screens, cosmetic wear, or unauthorized repairs."
+  },
+  {
+    "id": "CD-19",
+    "category": "cross_document",
+    "question": "If my order arrives damaged and I prefer a complete refund instead of a replacement, will I get my original shipping fee refunded too?",
+    "expected_doc_ids": ["doc_damaged_missing", "doc_refunds_returns"],
+    "expected_chunk_ids": ["damaged_missing_c1", "refunds_returns_c2"],
+    "expected_pages": [1],
+    "ground_truth": "Yes, if an item arrives damaged and you report it within 48 hours, NovaCart issues a 100% full refund including all original shipping fees and free return shipping."
+  },
+  {
+    "id": "CD-20",
+    "category": "cross_document",
+    "question": "If I cancel my order within the 30-minute self-service grace period, how does the refund work for card payments?",
+    "expected_doc_ids": ["doc_order_cancellation", "doc_refunds_returns"],
+    "expected_chunk_ids": ["order_cancellation_c1", "refunds_returns_c3"],
+    "expected_pages": [1, 2],
+    "ground_truth": "Cancelling within the 30-minute window issues a full refund to your original payment method immediately without fees, appearing on credit/debit cards in 3 to 5 business days."
+  },
+  {
+    "id": "CD-21",
+    "category": "cross_document",
+    "question": "Can I return a smart home device under warranty after 45 days if the internal battery fails?",
+    "expected_doc_ids": ["doc_warranty_support", "doc_refunds_returns"],
+    "expected_chunk_ids": ["warranty_support_c1", "refunds_returns_c1"],
+    "expected_pages": [1],
+    "ground_truth": "While the standard return window is 30 days, hardware failures and battery defects are covered under the 1-Year Limited Warranty, qualifying for a free replacement."
+  },
+  {
+    "id": "CD-22",
+    "category": "cross_document",
+    "question": "If my order has already shipped and cannot be cancelled, can I return it upon delivery without paying return shipping?",
+    "expected_doc_ids": ["doc_order_cancellation", "doc_refunds_returns"],
+    "expected_chunk_ids": ["order_cancellation_c2", "refunds_returns_c2"],
+    "expected_pages": [1],
+    "ground_truth": "If an order has shipped, you can refuse the parcel at delivery or generate a return label. If returned due to personal preference, a $5.99 deduction applies unless due to fulfillment error."
+  },
+  {
+    "id": "CD-23",
+    "category": "cross_document",
+    "question": "If I paid for an order with Klarna and return the item within 30 days, what happens to my remaining installments?",
+    "expected_doc_ids": ["doc_refunds_returns", "doc_payments_billing"],
+    "expected_chunk_ids": ["refunds_returns_c3", "payments_billing_c1"],
+    "expected_pages": [1, 2],
+    "ground_truth": "Future Klarna installments are automatically cancelled and any already-paid installments are reimbursed to your card within 5 to 7 business days."
+  },
+  {
+    "id": "CD-24",
+    "category": "cross_document",
+    "question": "Can I use PayPal to place an Expedited 2-day order to an APO military address?",
+    "expected_doc_ids": ["doc_shipping_delivery", "doc_payments_billing"],
+    "expected_chunk_ids": ["shipping_delivery_c2", "payments_billing_c1"],
+    "expected_pages": [1, 2],
+    "ground_truth": "While PayPal is accepted, Expedited shipping requires a physical street address and cannot deliver to APO/FPO military addresses (only Standard shipping supports APO via USPS)."
+  },
+  {
+    "id": "CD-25",
+    "category": "cross_document",
+    "question": "If an item in an Overnight Priority delivery arrives broken, do I have to pay to return it?",
+    "expected_doc_ids": ["doc_damaged_missing", "doc_refunds_returns", "doc_shipping_delivery"],
+    "expected_chunk_ids": ["damaged_missing_c1", "refunds_returns_c2"],
+    "expected_pages": [1],
+    "ground_truth": "No, return shipping is 100% free if the item is damaged, and you are not required to return hazardous broken goods unless requested for inspection."
+  },
+  {
+    "id": "CD-26",
+    "category": "cross_document",
+    "question": "If I request complete account deletion under GDPR, what happens to my past order receipts and unredeemed rewards?",
+    "expected_doc_ids": ["doc_account_security"],
+    "expected_chunk_ids": ["account_security_c2"],
+    "expected_pages": [1],
+    "ground_truth": "Account deletion permanently and irreversibly deletes order history, saved addresses, and unredeemed loyalty reward points."
+  },
+  {
+    "id": "CD-27",
+    "category": "cross_document",
+    "question": "If an item marked delivered cannot be found after 24 hours and a claim is filed, how long does NovaCart take to trace it before offering a replacement?",
+    "expected_doc_ids": ["doc_damaged_missing"],
+    "expected_chunk_ids": ["damaged_missing_c2"],
+    "expected_pages": [1],
+    "ground_truth": "NovaCart initiates a carrier trace; if the parcel remains unresolved within 48 hours, they resend the order via priority courier or issue a complete refund."
+  },
+  {
+    "id": "CD-28",
+    "category": "cross_document",
+    "question": "Can I combine a NovaCart gift card with a credit card to purchase an electronics item covered by the 1-year warranty?",
+    "expected_doc_ids": ["doc_payments_billing", "doc_warranty_support"],
+    "expected_chunk_ids": ["payments_billing_c1", "warranty_support_c1"],
+    "expected_pages": [1],
+    "ground_truth": "Yes, NovaCart gift cards can be combined with credit cards to cover balances, and branded electronics hardware includes the 1-Year Limited Manufacturer Warranty."
+  },
+  {
+    "id": "CD-29",
+    "category": "cross_document",
+    "question": "If I purchased as a guest and want to link my past orders to an account before returning an item, how can I do that?",
+    "expected_doc_ids": ["doc_account_security", "doc_refunds_returns"],
+    "expected_chunk_ids": ["account_security_c2", "refunds_returns_c1"],
+    "expected_pages": [1],
+    "ground_truth": "You can link past guest purchases by creating an account with the exact same email address used during guest checkout, then initiate returns in the portal."
+  },
+  {
+    "id": "CD-30",
+    "category": "cross_document",
+    "question": "What documentation or proof do I need to submit a warranty replacement claim for defective audio headphones?",
+    "expected_doc_ids": ["doc_warranty_support"],
+    "expected_chunk_ids": ["warranty_support_c1"],
+    "expected_pages": [1],
+    "ground_truth": "You need to provide your original order number and a brief video exhibiting the malfunction."
+  },
+  {
+    "id": "UN-31",
+    "category": "unsupported",
+    "question": "Can I pick up my online order at a physical retail store near me?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our NovaCart policies do not contain sufficient information regarding in-store retail pickup."
+  },
+  {
+    "id": "UN-32",
+    "category": "unsupported",
+    "question": "Can I book domestic or international airline flight tickets through NovaCart?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our NovaCart policies do not contain information regarding airline flight booking."
+  },
+  {
+    "id": "UN-33",
+    "category": "unsupported",
+    "question": "Do you accept Bitcoin, Ethereum, or Dogecoin cryptocurrency at checkout?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "NovaCart does not accept cryptocurrencies."
+  },
+  {
+    "id": "UN-34",
+    "category": "unsupported",
+    "question": "What is your return policy for live pets, puppies, and tropical fish?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our NovaCart documentation does not contain information regarding live animals or pets."
+  },
+  {
+    "id": "UN-35",
+    "category": "unsupported",
+    "question": "Do you ship packages to Antarctica or research stations at the South Pole?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our shipping policies do not contain information supporting delivery to Antarctica."
+  },
+  {
+    "id": "UN-36",
+    "category": "unsupported",
+    "question": "Can I hire a certified NovaCart technician to install plumbing or a home dishwasher?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our documentation does not contain information regarding plumbing or appliance installation services."
+  },
+  {
+    "id": "UN-37",
+    "category": "unsupported",
+    "question": "What are your current interest rates for residential mortgage loans?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our NovaCart policies do not offer or document residential mortgage loans."
+  },
+  {
+    "id": "UN-38",
+    "category": "unsupported",
+    "question": "Does NovaCart offer prescription drug discounts or medical health insurance?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our policies do not contain information regarding prescription drugs or health insurance."
+  },
+  {
+    "id": "UN-39",
+    "category": "unsupported",
+    "question": "Can I rent a car or passenger van through my NovaCart membership account?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our policies do not contain information regarding car rental services."
+  },
+  {
+    "id": "UN-40",
+    "category": "unsupported",
+    "question": "Does NovaCart sell prescription eyeglasses and custom optometrist contact lenses?",
+    "expected_doc_ids": [],
+    "expected_chunk_ids": [],
+    "expected_pages": [],
+    "ground_truth": "I'm sorry, but our documentation does not contain information regarding prescription eyewear or lenses."
+  }
+]
+

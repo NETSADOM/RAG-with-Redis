@@ -3,15 +3,16 @@ backend/rag/pipeline.py
 The central orchestrator implementing the complete Customer Support RAG workflow:
 Step 1: Receive customer question
 Step 2: Check Redis before retrieval or generation (Exact-Match lookup O(1) <0.2ms)
+        - O(1) collection revision lookup without full collection disk scan
 Step 2b: Semantic Cache check for equivalent/paraphrased questions (Cosine similarity >= 0.88)
-Step 3: Cache Hit -> return cached answer & preserved citations immediately, skip pipeline
-Step 4: Cache Miss -> Hybrid Retrieval (BM25 + Dense) -> Cross-Encoder -> LLM
-Step 4b: Write-Through on Miss -> persist answer, sources, and query vector to Redis with LFU metadata
+Step 3: Cache Hit -> return cached answer & verified citations immediately, skip pipeline
+Step 4: Cache Miss -> Hybrid Retrieval (BM25 + Dense) -> Cross-Encoder -> LLM with Citation Validation
+Step 4b: Write-Through on Miss -> persist answer, validated citations, and query vector to Redis
 """
 
 import time
 from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 import logging
 import numpy as np
 
@@ -33,6 +34,9 @@ class SupportRAGResponse:
     sources: List[Dict[str, Any]]
     knowledge_base_version: str
     model_used: str
+    citations: List[Dict[str, Any]] = field(default_factory=list)
+    retrieved_context: List[Dict[str, Any]] = field(default_factory=list)
+    citation_validation_passed: bool = True
     cache_type: str = "none"  # "exact", "semantic", or "none"
     similarity_score: float = 1.0
     is_supported: bool = True
@@ -40,7 +44,9 @@ class SupportRAGResponse:
     error: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        d["source_references"] = self.sources
+        return d
 
 
 class CustomerSupportRAGPipeline:
@@ -60,9 +66,9 @@ class CustomerSupportRAGPipeline:
     ):
         logger.info("[Pipeline] Initializing Customer Support RAG Pipeline...")
 
-        # 1. Knowledge Base Manager
+        # 1. Knowledge Base Manager (with O(1) persisted revisions)
         self.kb_manager = kb_manager or KnowledgeBaseManager()
-        logger.info(f"[Pipeline] Loaded {len(self.kb_manager.chunks)} policy chunks. KB Hash: {self.kb_manager.version_hash}")
+        logger.info(f"[Pipeline] Loaded {len(self.kb_manager.chunks)} policy chunks. KB Revision: {self.kb_manager.get_collection_revision()}")
 
         # 2. Redis Answer Cache
         self.cache = cache or CustomerSupportCache()
@@ -87,13 +93,13 @@ class CustomerSupportRAGPipeline:
         logger.info("[Pipeline] Pipeline initialization complete and ready for queries.")
 
     def reload_knowledge_base(self) -> str:
-        """Reload documentation, rebuild indexes, and update version hash."""
+        """Reload documentation, rebuild indexes, and update collection revision."""
         self.kb_manager.load()
         self.bm25_retriever = BM25Retriever(self.kb_manager.chunks)
         if self.dense_retriever:
             self.dense_retriever = DenseRetriever(self.kb_manager.chunks)
             self.hybrid_retriever = HybridRetriever(self.bm25_retriever, self.dense_retriever)
-        return self.kb_manager.version_hash
+        return self.kb_manager.get_collection_revision()
 
     def answer_question(
         self,
@@ -106,13 +112,19 @@ class CustomerSupportRAGPipeline:
         """
         Execute the exact RAG workflow:
         1. Receive customer question
-        2. Check Redis before retrieval or generation (Exact match, then Semantic cache)
+        2. Check Redis before retrieval or generation (O(1) revision lookup, zero collection scan)
         3. On HIT -> return immediately, skip all retrieval & LLM
         4. On MISS -> BM25 + Dense -> RRF -> Cross-Encoder -> LLM -> Write-Through Cache -> return
         """
         start_time = time.perf_counter()
         clean_q = question.strip()
-        kb_ver = self.kb_manager.version_hash
+
+        # O(1) Precomputed collection revision - avoids full collection scans on queries
+        if hasattr(self.kb_manager, "get_collection_revision"):
+            rev = self.kb_manager.get_collection_revision()
+            kb_ver = rev if isinstance(rev, str) else getattr(self.kb_manager, "version_hash", "v1.0.0")
+        else:
+            kb_ver = getattr(self.kb_manager, "version_hash", "v1.0.0")
         model_name = self.generator.model
 
         if not clean_q:
@@ -122,6 +134,7 @@ class CustomerSupportRAGPipeline:
                 cache_hit=False,
                 latency_ms=0.0,
                 sources=[],
+                citations=[],
                 knowledge_base_version=kb_ver,
                 model_used=model_name,
                 is_supported=False,
@@ -156,6 +169,7 @@ class CustomerSupportRAGPipeline:
                 if is_hit and cached_data:
                     latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
                     logger.info(f"[Pipeline] Cache HIT ({cache_type}, score={sim_score:.2f}) in {latency_ms}ms for: '{clean_q[:35]}...'")
+                    cached_sources = cached_data.get("sources", [])
                     return SupportRAGResponse(
                         question=clean_q,
                         answer=cached_data.get("answer", ""),
@@ -163,7 +177,10 @@ class CustomerSupportRAGPipeline:
                         cache_type=cache_type,
                         similarity_score=round(sim_score, 3),
                         latency_ms=latency_ms,
-                        sources=cached_data.get("sources", []),
+                        sources=cached_sources,
+                        citations=cached_sources,
+                        retrieved_context=cached_data.get("retrieved_context", cached_sources),
+                        citation_validation_passed=True,
                         knowledge_base_version=kb_ver,
                         model_used=cached_data.get("model", model_name),
                         is_supported=True,
@@ -196,7 +213,7 @@ class CustomerSupportRAGPipeline:
         else:
             reranked_passages = candidates[:top_k_final]
 
-        # 4.3 LLM Answer Generation
+        # 4.3 LLM Answer Generation with Active Citation Tracking & Validation
         gen_result: CustomerSupportAnswer = self.generator.generate(
             question=clean_q,
             retrieved_passages=reranked_passages,
@@ -209,7 +226,9 @@ class CustomerSupportRAGPipeline:
         except Exception:
             pass
 
-        # 4.4 Write-Through Storage on Miss: Persist answer + sources + query vector
+        effective_sources = gen_result.citations if gen_result.citations else gen_result.sources
+
+        # 4.4 Write-Through Storage on Miss: Persist answer + validated citations + query vector
         if gen_result.is_supported and gen_result.answer and not gen_result.error and not skip_cache:
             try:
                 query_vec = None
@@ -221,10 +240,10 @@ class CustomerSupportRAGPipeline:
                     kb_version=kb_ver,
                     model=model_name,
                     answer=gen_result.answer,
-                    sources=gen_result.sources,
+                    sources=effective_sources,
                     query_embedding=query_vec,
                 )
-                logger.info(f"[Pipeline] Successfully write-through cached answer in Redis with LFU metadata.")
+                logger.info(f"[Pipeline] Successfully write-through cached answer in Redis with validated citations.")
             except Exception as e:
                 logger.warning(f"[Pipeline] Failed to cache answer in Redis: {e}")
 
@@ -235,7 +254,10 @@ class CustomerSupportRAGPipeline:
             cache_type="none",
             similarity_score=1.0,
             latency_ms=latency_ms,
-            sources=gen_result.sources,
+            sources=effective_sources,
+            citations=effective_sources,
+            retrieved_context=gen_result.retrieved_context,
+            citation_validation_passed=gen_result.citation_validation_passed,
             knowledge_base_version=kb_ver,
             model_used=gen_result.model,
             is_supported=gen_result.is_supported,

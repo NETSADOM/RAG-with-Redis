@@ -6,7 +6,11 @@ export interface SourceReference {
   title: string;
   section: string;
   source_ref: string;
-  text_snippet: string;
+  page_number?: number;
+  source_url?: string;
+  supporting_passage?: string;
+  text_snippet?: string;
+  is_validated?: boolean;
 }
 
 export interface ChatResponse {

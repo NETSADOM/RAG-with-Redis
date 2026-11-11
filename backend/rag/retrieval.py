@@ -6,6 +6,11 @@ Implements:
 3. Reciprocal Rank Fusion (RRF) Hybrid Merger
 """
 
+import os
+# Ensure instant offline local model loading from cache
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 import math
 import re
 import json
@@ -26,6 +31,8 @@ class KBChunk:
         section: str,
         source_ref: str,
         text: str,
+        page_number: int = 1,
+        source_url: str = "",
         doc_version: str = "v1.0",
     ):
         self.chunk_id = chunk_id
@@ -34,6 +41,8 @@ class KBChunk:
         self.section = section
         self.source_ref = source_ref
         self.text = text
+        self.page_number = page_number
+        self.source_url = source_url or f"/docs/policies/{doc_id}.pdf#page={page_number}"
         self.doc_version = doc_version
 
     def to_dict(self) -> Dict[str, Any]:
@@ -44,12 +53,20 @@ class KBChunk:
             "section": self.section,
             "source_ref": self.source_ref,
             "text": self.text,
+            "page_number": self.page_number,
+            "source_url": self.source_url,
             "doc_version": self.doc_version,
         }
 
 
 class KnowledgeBaseManager:
-    """Loads, parses, and versions the customer support documentation."""
+    """
+    Loads, parses, and versions customer support documentation.
+    Features:
+    - O(1) Precomputed Document Revisions: Persists document-level hashes during ingestion
+      and modification. Eliminates full collection disk scans or chunk iterations on queries.
+    - Clickable Page Linking: Maps every chunk to its physical PDF page and source URL.
+    """
 
     def __init__(self, kb_path: Optional[Path | str] = None):
         if kb_path is None:
@@ -57,26 +74,45 @@ class KnowledgeBaseManager:
         else:
             self.kb_path = Path(kb_path)
         self.chunks: List[KBChunk] = []
+        self.doc_revisions: Dict[str, str] = {}
+        self.collection_revision: str = ""
         self.version_hash: str = ""
         self.load()
 
+    def get_collection_revision(self) -> str:
+        """
+        Return the pre-persisted collection revision in O(1).
+        Zero disk read, zero collection chunk iteration on incoming queries.
+        """
+        return self.collection_revision
+
+    def get_doc_revision(self, doc_id: str) -> str:
+        """Return the persisted revision hash for a specific document in O(1)."""
+        return self.doc_revisions.get(doc_id, "")
+
     def load(self) -> None:
-        """Load documentation from JSON and calculate global content hash."""
+        """
+        Load documentation from JSON, parse chunks, and persist document revisions in memory.
+        Calculates doc-level hashes once during startup or reload.
+        """
         if not self.kb_path.exists():
             raise FileNotFoundError(f"Knowledge base file not found at: {self.kb_path}")
 
         raw_content = self.kb_path.read_text(encoding="utf-8")
         data = json.loads(raw_content)
 
-        # Calculate stable SHA-256 fingerprint of the knowledge base content
-        self.version_hash = hashlib.sha256(raw_content.encode("utf-8")).hexdigest()[:16]
-
         self.chunks = []
+        self.doc_revisions = {}
+
         for doc in data.get("documents", []):
             doc_id = doc.get("doc_id", "")
             title = doc.get("title", "")
             doc_ver = doc.get("version", "v1.0")
             default_source = doc.get("source_ref", "")
+
+            # Compute stable revision hash for this individual document
+            doc_raw = json.dumps(doc, sort_keys=True)
+            self.doc_revisions[doc_id] = hashlib.sha256(doc_raw.encode("utf-8")).hexdigest()[:12]
 
             for c in doc.get("chunks", []):
                 chunk = KBChunk(
@@ -86,30 +122,45 @@ class KnowledgeBaseManager:
                     section=c.get("section", ""),
                     source_ref=c.get("source_ref", default_source),
                     text=c.get("text", ""),
+                    page_number=int(c.get("page_number", 1)),
+                    source_url=c.get("source_url", f"/docs/policies/{doc_id}.pdf#page={c.get('page_number', 1)}"),
                     doc_version=doc_ver,
                 )
                 self.chunks.append(chunk)
 
+        # Global collection revision derived deterministically from persisted doc revisions
+        rev_manifest = json.dumps(self.doc_revisions, sort_keys=True)
+        self.collection_revision = hashlib.sha256(rev_manifest.encode("utf-8")).hexdigest()[:16]
+        self.version_hash = self.collection_revision
+
     def update_document_chunk(self, chunk_id: str, new_text: str) -> str:
-        """Update a chunk text to demonstrate knowledge-base version invalidation."""
+        """
+        Update a chunk text, persist changes, and immediately update document revisions.
+        Does not require running scans on subsequent queries.
+        """
         raw_content = self.kb_path.read_text(encoding="utf-8")
         data = json.loads(raw_content)
 
         updated = False
+        target_doc_id = ""
         for doc in data.get("documents", []):
             for c in doc.get("chunks", []):
                 if c.get("chunk_id") == chunk_id:
                     c["text"] = new_text
                     updated = True
+                    target_doc_id = doc.get("doc_id", "")
                     break
+            if updated:
+                break
 
         if not updated:
             raise ValueError(f"Chunk '{chunk_id}' not found.")
 
-        # Save back to file and reload
+        # Persist to disk and reload revision manifest once
         self.kb_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
         self.load()
-        return self.version_hash
+        logger.info(f"[KB] Persisted revision update for doc '{target_doc_id}'. New collection revision: {self.collection_revision}")
+        return self.collection_revision
 
 
 class BM25Retriever:

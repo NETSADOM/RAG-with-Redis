@@ -7,27 +7,33 @@
       "doc_id": "doc_refunds_returns",
       "title": "Refunds and Returns Policy",
       "version": "v1.2",
-      "source_ref": "https://help.novacart.com/policies/returns",
+      "source_ref": "Page 1-2, Doc REF-01",
       "chunks": [
         {
           "chunk_id": "refunds_returns_c1",
           "title": "Refunds and Returns Policy - Standard Return Window",
           "section": "Standard Return Window & Eligibility",
-          "source_ref": "help.novacart.com/policies/returns#window",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 1.1",
+          "source_url": "/docs/policies/doc_refunds_returns.pdf#page=1",
           "text": "NovaCart Essentials offers a 30-day return policy for most physical items starting from the delivery date recorded by the courier. To qualify for a full refund, items must be in their original, unused condition, with all tags attached and inside the original manufacturer packaging. Certain categories including opened personal hygiene goods, perishable food items, gift cards, and downloadable software licenses are strictly non-returnable unless defective upon delivery."
         },
         {
           "chunk_id": "refunds_returns_c2",
           "title": "Refunds and Returns Policy - Return Shipping & Restocking Fees",
           "section": "Shipping Labels & Restocking Fees",
-          "source_ref": "help.novacart.com/policies/returns#fees",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 1.2",
+          "source_url": "/docs/policies/doc_refunds_returns.pdf#page=1",
           "text": "For returns initiated due to customer preference, change of mind, or accidental ordering, a prepaid return shipping label can be generated in your account portal for a flat deduction of $5.99 from your refund total. Return shipping is 100% free if the return is due to our fulfillment error, a damaged product, or a verified manufacturer defect. NovaCart does not charge restocking fees on apparel, footwear, or standard accessories. However, high-value electronics and heavy appliances opened and returned without defect are subject to a 10% open-box restocking fee."
         },
         {
           "chunk_id": "refunds_returns_c3",
           "title": "Refunds and Returns Policy - Refund Processing Timelines",
           "section": "Refund Processing & Payout Timelines",
-          "source_ref": "help.novacart.com/policies/returns#processing",
+          "page_number": 2,
+          "source_ref": "Page 2, Sec 1.3",
+          "source_url": "/docs/policies/doc_refunds_returns.pdf#page=2",
           "text": "Once your returned package reaches our warehouse, inspection takes 2 to 3 business days. Once approved, the refund is initiated immediately. Funds typically appear on your original payment method within 3 to 5 business days for credit/debit cards, 1 to 2 business days for PayPal, and within 24 hours for NovaCart Store Credit. If you paid using Klarna or Afterpay installment plans, future installments are automatically cancelled and any paid installments are reimbursed to your card within 5 to 7 business days."
         }
       ]
@@ -36,20 +42,24 @@
       "doc_id": "doc_shipping_delivery",
       "title": "Shipping and Delivery Policy",
       "version": "v1.1",
-      "source_ref": "https://help.novacart.com/policies/shipping",
+      "source_ref": "Page 1-2, Doc SHP-02",
       "chunks": [
         {
           "chunk_id": "shipping_delivery_c1",
           "title": "Shipping and Delivery Policy - Shipping Speeds & Costs",
           "section": "Shipping Methods & Transit Times",
-          "source_ref": "help.novacart.com/policies/shipping#methods",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 2.1",
+          "source_url": "/docs/policies/doc_shipping_delivery.pdf#page=1",
           "text": "NovaCart offers three primary domestic shipping tiers: Standard Shipping (3-5 business days) costs $4.99 or is completely FREE on all orders totaling $50.00 or more before taxes. Expedited Shipping (2 business days) is available for $9.99. Overnight Priority Delivery (next business day if ordered before 1:00 PM EST) is available for $19.99. Orders are processed at our fulfillment centers Monday through Friday, excluding federal holidays. Orders placed over the weekend begin processing the next business day."
         },
         {
           "chunk_id": "shipping_delivery_c2",
           "title": "Shipping and Delivery Policy - Tracking and Address Delivery",
           "section": "Tracking Numbers & PO Box Delivery",
-          "source_ref": "help.novacart.com/policies/shipping#tracking",
+          "page_number": 2,
+          "source_ref": "Page 2, Sec 2.2",
+          "source_url": "/docs/policies/doc_shipping_delivery.pdf#page=2",
           "text": "A tracking link is automatically dispatched via email and SMS within 24 hours of package departure from our warehouse. Standard shipping can deliver to PO Boxes and military APO/FPO addresses via USPS, but Expedited and Overnight deliveries require a physical street address through FedEx or UPS. International delivery is currently supported to Canada, the United Kingdom, and the European Union, with delivery times ranging between 7 and 14 business days. Customs duties and import VAT are calculated and collected at checkout so there are no surprise fees at your doorstep."
         }
       ]
@@ -58,20 +68,24 @@
       "doc_id": "doc_order_cancellation",
       "title": "Order Cancellation and Modification Policy",
       "version": "v1.0",
-      "source_ref": "https://help.novacart.com/policies/cancellations",
+      "source_ref": "Page 1, Doc CAN-03",
       "chunks": [
         {
           "chunk_id": "order_cancellation_c1",
           "title": "Order Cancellation Policy - Self-Service Cancellation Window",
           "section": "30-Minute Cancellation Grace Period",
-          "source_ref": "help.novacart.com/policies/cancellations#grace-period",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 3.1",
+          "source_url": "/docs/policies/doc_order_cancellation.pdf#page=1",
           "text": "Customers have a 30-minute self-service grace period immediately after order submission to cancel an order directly from their account dashboard by navigating to 'My Orders' and clicking 'Cancel Order'. During this 30-minute window, a full refund is immediately credited back to the original payment method without processing deductions. Once the 30-minute window expires, orders are locked and transmitted to the automated warehouse sorting lines and cannot be cancelled or intercepted."
         },
         {
           "chunk_id": "order_cancellation_c2",
           "title": "Order Cancellation Policy - Address Changes & Post-Shipment Recourse",
           "section": "Address Modifications & Return Upon Delivery",
-          "source_ref": "help.novacart.com/policies/cancellations#address-change",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 3.2",
+          "source_url": "/docs/policies/doc_order_cancellation.pdf#page=1",
           "text": "If you need to change your shipping address, you must do so within the initial 30-minute window. Customer support cannot manually adjust shipping destinations once an order has progressed to 'Processing' or 'Dispatched'. If your order has already shipped, you cannot cancel it mid-transit; you should wait for the package to arrive, refuse the parcel at delivery, or generate a free prepaid return label in your account portal once it is delivered."
         }
       ]
@@ -80,20 +94,24 @@
       "doc_id": "doc_damaged_missing",
       "title": "Damaged, Defective, or Missing Items Policy",
       "version": "v1.3",
-      "source_ref": "https://help.novacart.com/policies/damaged-missing",
+      "source_ref": "Page 1, Doc DMG-04",
       "chunks": [
         {
           "chunk_id": "damaged_missing_c1",
           "title": "Damaged or Defective Items - Reporting and Proof",
           "section": "Reporting Window & Photo Proof Requirements",
-          "source_ref": "help.novacart.com/policies/damaged-missing#damaged",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 4.1",
+          "source_url": "/docs/policies/doc_damaged_missing.pdf#page=1",
           "text": "If your order arrives damaged, shattered, or defective, you must report the issue within 48 hours of delivery confirmation. Contact customer support via our portal or live chat with your order number, a clear photograph showing the shipping carton and damaged item, and a description of the defect. We will immediately ship an expedited replacement at zero cost or issue a 100% full refund including all original shipping fees. You are not required to return shattered or hazardous broken goods unless requested for safety inspection."
         },
         {
           "chunk_id": "damaged_missing_c2",
           "title": "Missing Items and Lost Packages - Investigation Process",
           "section": "Missing Items & Marked Delivered But Not Received",
-          "source_ref": "help.novacart.com/policies/damaged-missing#missing",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 4.2",
+          "source_url": "/docs/policies/doc_damaged_missing.pdf#page=1",
           "text": "If tracking indicates your package was 'Delivered' but you cannot find it, please check side porches, building reception desks, and check with household members. Carriers occasionally scan packages up to 24 hours prior to actual drop-off. If the package has still not appeared after 24 hours of delivery status (and within 7 days of the scan), submit a 'Lost Parcel Claim' in our help center. NovaCart will initiate a carrier trace; if unresolved within 48 hours, we will either resend your order via priority courier or issue a complete refund."
         }
       ]
@@ -102,20 +120,24 @@
       "doc_id": "doc_payments_billing",
       "title": "Payment Methods and Billing Troubleshooting",
       "version": "v1.1",
-      "source_ref": "https://help.novacart.com/policies/payments",
+      "source_ref": "Page 1, Doc PAY-05",
       "chunks": [
         {
           "chunk_id": "payments_billing_c1",
           "title": "Payment Methods - Accepted Forms of Payment",
           "section": "Accepted Payment Types",
-          "source_ref": "help.novacart.com/policies/payments#methods",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 5.1",
+          "source_url": "/docs/policies/doc_payments_billing.pdf#page=1",
           "text": "NovaCart accepts all major credit and debit cards including Visa, Mastercard, American Express, Discover, and JCB. Digital wallets including Apple Pay, Google Pay, and PayPal are fully supported on desktop and mobile web. Buy Now Pay Later (BNPL) options are provided via Klarna and Afterpay for orders between $35.00 and $1,500.00. We do not accept personal checks, cash-on-delivery (COD), money orders, or cryptocurrencies. NovaCart Gift Cards can be combined with credit cards or PayPal to cover remaining balances."
         },
         {
           "chunk_id": "payments_billing_c2",
           "title": "Billing Troubleshooting - Declined Cards & Duplicate Charges",
           "section": "Failed Transactions & Authorization Holds",
-          "source_ref": "help.novacart.com/policies/payments#troubleshooting",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 5.2",
+          "source_url": "/docs/policies/doc_payments_billing.pdf#page=1",
           "text": "If your card transaction is declined at checkout, ensure your billing address and postal code exactly match the records on file with your issuing bank. Frequent causes of decline include security fraud blocks, mismatched CVV codes, or international purchase restrictions. If you see multiple pending charges on your bank statement after an unsuccessful checkout attempt, these are temporary authorization holds created by your bank and are automatically released within 2 to 5 business days without debiting your account."
         }
       ]
@@ -124,20 +146,24 @@
       "doc_id": "doc_account_security",
       "title": "Account Management and Security Policy",
       "version": "v1.0",
-      "source_ref": "https://help.novacart.com/policies/account",
+      "source_ref": "Page 1, Doc ACC-06",
       "chunks": [
         {
           "chunk_id": "account_security_c1",
           "title": "Account Security - Password Reset & Two-Factor Authentication",
           "section": "Password Resets & 2FA Setup",
-          "source_ref": "help.novacart.com/policies/account#security",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 6.1",
+          "source_url": "/docs/policies/doc_account_security.pdf#page=1",
           "text": "To reset a forgotten password, visit the login page and click 'Forgot Password'. A secure 6-digit verification code will be sent to your registered email address; this code expires in 15 minutes. For enhanced protection, customers can enable Two-Factor Authentication (2FA) inside 'Account Settings > Security' using SMS or authenticator apps such as Google Authenticator and 1Password. If you suspect unauthorized access, immediately change your password and click 'Log Out of All Devices' in account settings."
         },
         {
           "chunk_id": "account_security_c2",
           "title": "Account Management - Deletion & Guest Checkout Order Linking",
           "section": "Account Deletion & Merging Guest Orders",
-          "source_ref": "help.novacart.com/policies/account#management",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 6.2",
+          "source_url": "/docs/policies/doc_account_security.pdf#page=1",
           "text": "If you completed purchases as a guest, you can link those past orders to a newly created account by ensuring your account email matches the email address supplied during guest checkout. Under global data protection regulations (GDPR and CCPA), you can request complete account deletion and data anonymization by navigating to 'Account Settings > Privacy > Delete Account'. Account deletion permanently deletes order history, saved addresses, and unredeemed loyalty reward points and cannot be undone."
         }
       ]
@@ -146,17 +172,18 @@
       "doc_id": "doc_warranty_support",
       "title": "Warranty and Product Support Policy",
       "version": "v1.0",
-      "source_ref": "https://help.novacart.com/policies/warranty",
+      "source_ref": "Page 1, Doc WAR-07",
       "chunks": [
         {
           "chunk_id": "warranty_support_c1",
           "title": "Warranty Policy - 1-Year Limited Hardware Warranty",
           "section": "NovaCart 1-Year Limited Warranty Terms",
-          "source_ref": "help.novacart.com/policies/warranty#terms",
+          "page_number": 1,
+          "source_ref": "Page 1, Sec 7.1",
+          "source_url": "/docs/policies/doc_warranty_support.pdf#page=1",
           "text": "All NovaCart branded consumer electronics, audio gear, and smart home hardware include a complimentary 1-Year Limited Manufacturer Warranty covering internal hardware failures, battery defects, and manufacturing workmanship. The warranty does not cover accidental damage, liquid spills, cracked screens, cosmetic wear-and-tear, or unauthorized repairs. To submit a warranty claim, provide your original order number and a brief video exhibiting the malfunction. Approved claims receive a free brand-new replacement unit with prepaid return shipping for the defective device."
         }
       ]
     }
   ]
 }
-

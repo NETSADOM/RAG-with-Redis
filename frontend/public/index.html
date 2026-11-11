@@ -205,6 +205,30 @@
   <!-- Toast Notifications -->
   <div class="toast-hub" id="toastHub"></div>
 
+  <!-- Clickable Citation Evidence Modal -->
+  <div class="evidence-modal-backdrop" id="evidenceModal" style="display:none;">
+    <div class="evidence-modal-card">
+      <div class="evidence-modal-header">
+        <div class="evidence-modal-title-row">
+          <span class="evidence-badge-verified">✓ Verified Grounded Reference</span>
+          <h3 class="evidence-modal-title" id="modalDocTitle">Document Title</h3>
+        </div>
+        <button class="modal-close-btn" id="modalCloseBtn" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="evidence-modal-body">
+        <div class="evidence-meta-strip">
+          <span class="meta-tag" id="modalPageTag">Page 1, Sec 1.1</span>
+          <span class="meta-tag" id="modalChunkTag">chunk_id</span>
+          <a class="meta-link" id="modalPdfLink" href="#" target="_blank">📄 View PDF Page &rarr;</a>
+        </div>
+        <div class="evidence-quote-box">
+          <div class="quote-header">Supporting Documentation Passage:</div>
+          <p class="quote-text" id="modalPassageText">Passage content...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="/public/app.js"></script>
 </body>
 </html>

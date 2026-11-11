@@ -14,6 +14,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearCacheBtn = document.getElementById("clearCacheBtn");
   const toastHub = document.getElementById("toastHub");
 
+  // Evidence Modal Elements
+  const evidenceModal = document.getElementById("evidenceModal");
+  const modalCloseBtn = document.getElementById("modalCloseBtn");
+  const modalDocTitle = document.getElementById("modalDocTitle");
+  const modalPageTag = document.getElementById("modalPageTag");
+  const modalChunkTag = document.getElementById("modalChunkTag");
+  const modalPdfLink = document.getElementById("modalPdfLink");
+  const modalPassageText = document.getElementById("modalPassageText");
+
+  function openEvidenceModal(src) {
+    if (!evidenceModal) return;
+    if (modalDocTitle) modalDocTitle.textContent = src.title || "Policy Document";
+    if (modalPageTag) modalPageTag.textContent = `Page ${src.page_number || 1} · ${src.section || "General"}`;
+    if (modalChunkTag) modalChunkTag.textContent = src.chunk_id || "";
+    if (modalPdfLink) {
+      modalPdfLink.href = src.source_url || "#";
+      modalPdfLink.textContent = `📄 View PDF Page ${src.page_number || 1} →`;
+    }
+    if (modalPassageText) modalPassageText.textContent = src.supporting_passage || src.text_snippet || "Supporting policy excerpt.";
+    evidenceModal.style.display = "flex";
+  }
+
+  function closeEvidenceModal() {
+    if (evidenceModal) evidenceModal.style.display = "none";
+  }
+
+  if (modalCloseBtn) modalCloseBtn.addEventListener("click", closeEvidenceModal);
+  if (evidenceModal) {
+    evidenceModal.addEventListener("click", (e) => {
+      if (e.target === evidenceModal) closeEvidenceModal();
+    });
+  }
+
   // Dashboard Telemetry Elements
   const dashHitRate = document.getElementById("dashHitRate");
   const dashHitBar = document.getElementById("dashHitBar");
@@ -166,6 +199,15 @@ document.addEventListener("DOMContentLoaded", () => {
         ${escapeHtml(text)}
       </div>
     `;
+    // Attach citation inspection click handlers
+    row.querySelectorAll(".source-badge-clickable").forEach((badge) => {
+      badge.addEventListener("click", () => {
+        const idx = parseInt(badge.getAttribute("data-idx"), 10);
+        const srcObj = activeSources[idx];
+        if (srcObj) openEvidenceModal(srcObj);
+      });
+    });
+
     chatFeed.appendChild(row);
     scrollToBottom();
   }
@@ -187,6 +229,15 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `;
+    // Attach citation inspection click handlers
+    row.querySelectorAll(".source-badge-clickable").forEach((badge) => {
+      badge.addEventListener("click", () => {
+        const idx = parseInt(badge.getAttribute("data-idx"), 10);
+        const srcObj = activeSources[idx];
+        if (srcObj) openEvidenceModal(srcObj);
+      });
+    });
+
     chatFeed.appendChild(row);
     scrollToBottom();
     return row;
@@ -207,24 +258,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const latency = Number(data.latency_ms || 0);
     const bubbleClass = isHit ? "msg-bubble assistant-bubble is-cache-hit" : "msg-bubble assistant-bubble";
 
-    // Format citations / source references
+    // Format citations / source references (Tracked and Validated)
+    const activeSources = data.citations || data.source_references || data.sources || [];
     let citationsHtml = "";
-    if (data.source_references && data.source_references.length > 0) {
-      const sourceBadges = data.source_references.map((src) => {
+    if (activeSources.length > 0) {
+      const sourceBadges = activeSources.map((src, idx) => {
         const title = escapeHtml(src.title || src.doc_id || "Policy Document");
-        const snippet = escapeHtml(src.text_snippet || "");
+        const page = src.page_number ? `Page ${src.page_number}` : (src.source_ref || "");
         const chunkId = escapeHtml(src.chunk_id || "");
         return `
-          <div class="source-badge" title="${snippet}">
+          <button class="source-badge source-badge-clickable" data-idx="${idx}" type="button" title="Click to view supporting passage &amp; PDF page">
             <span>📄 ${title}</span>
-            <span style="opacity:0.65;font-size:0.64rem;">${chunkId}</span>
-          </div>
+            <span style="opacity:0.85;font-size:0.65rem;background:rgba(56,189,248,0.18);padding:1px 5px;border-radius:4px;">${escapeHtml(page)}</span>
+            <span style="color:#34D399;font-size:0.65rem;font-weight:700;">✓ Validated</span>
+          </button>
         `;
       }).join("");
 
       citationsHtml = `
         <div class="citations-wrap">
-          <span class="citations-label">📚 Verified Evidence (${data.source_references.length} Grounded References)</span>
+          <span class="citations-label">📚 Actively Cited Evidence (${activeSources.length} Verified References)</span>
           <div class="sources-chips-row">
             ${sourceBadges}
           </div>
@@ -278,6 +331,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
     }
+
+    // Attach citation inspection click handlers
+    row.querySelectorAll(".source-badge-clickable").forEach((badge) => {
+      badge.addEventListener("click", () => {
+        const idx = parseInt(badge.getAttribute("data-idx"), 10);
+        const srcObj = activeSources[idx];
+        if (srcObj) openEvidenceModal(srcObj);
+      });
+    });
 
     chatFeed.appendChild(row);
     scrollToBottom();

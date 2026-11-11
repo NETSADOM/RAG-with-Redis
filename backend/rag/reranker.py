@@ -4,6 +4,11 @@ Cross-Encoder Reranker for deep semantic interaction scoring between
 the customer question and candidate policy passages.
 """
 
+import os
+# Ensure instant offline local model loading from cache
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 from typing import List, Dict, Any, Optional, Tuple
 import logging
 

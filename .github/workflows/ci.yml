@@ -1,0 +1,62 @@
+name: CI - Customer Support RAG Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-evaluate:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify Redis Connection
+        run: |
+          python -c "import redis; r = redis.Redis.from_url('redis://localhost:6379/0'); print('Redis ping:', r.ping())"
+
+      - name: Run Pytest Suite with Real Redis Integration
+        env:
+          REDIS_URL: "redis://localhost:6379/0"
+          TEST_REDIS_URL: "redis://localhost:6379/0"
+        run: |
+          python -m pytest backend/tests/ -v -p no:cacheprovider
+
+      - name: Run RAG Answer Quality Evaluation Suite (40 Questions)
+        env:
+          REDIS_URL: "redis://localhost:6379/0"
+        run: |
+          python benchmarks/evaluate_quality.py
+
+      - name: Upload Evaluation Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-evaluation-report
+          path: benchmarks/evaluation_report.json
+

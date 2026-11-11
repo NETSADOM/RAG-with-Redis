@@ -86,6 +86,15 @@ def mock_pipeline(mock_kb_chunks):
             "source_ref": "help.novacart.com/returns#window",
             "relevance_score": 0.95,
         }],
+        citations=[{
+            "doc_id": "doc_returns",
+            "title": "Return Policy",
+            "section": "Eligibility",
+            "chunk_id": "returns_1",
+            "source_ref": "help.novacart.com/returns#window",
+            "relevance_score": 0.95,
+        }],
+        citation_validation_passed=True,
         model="gpt-4o-mini",
     )
 
@@ -337,4 +346,66 @@ def test_11_does_not_invent_answers_for_unsupported_questions():
     assert answer.is_supported is False
     assert "does not contain information" in answer.answer
     assert len(answer.sources) == 0
+
+
+# --------------------------------------------------------------------------
+# Test 12: EF-08 Regression - Rejects tracking passage as answer for cutoff time
+# --------------------------------------------------------------------------
+def test_12_ef08_regression_rejects_tracking_passage_for_cutoff_time():
+    """
+    Regression test for EF-08:
+    'What is the daily cutoff time for Overnight Priority delivery?'
+    The dataset specifies 1:00 PM EST, shipping_delivery_c1, and page 1.
+    The system must reject shipping_delivery_c2 (tracking passage, page 2) as an answer.
+    """
+    generator = CustomerSupportGenerator(api_key="")
+
+    cutoff_chunk = KBChunk(
+        chunk_id="shipping_delivery_c1",
+        doc_id="doc_shipping_delivery",
+        title="Shipping and Delivery Policy - Shipping Speeds & Costs",
+        section="Shipping Methods & Transit Times",
+        source_ref="Page 1, Sec 2.1",
+        page_number=1,
+        text="Overnight Priority Delivery (next business day if ordered before 1:00 PM EST) is available for $19.99.",
+    )
+
+    tracking_chunk = KBChunk(
+        chunk_id="shipping_delivery_c2",
+        doc_id="doc_shipping_delivery",
+        title="Shipping and Delivery Policy - Tracking and Address Delivery",
+        section="Tracking Numbers & PO Box Delivery",
+        source_ref="Page 2, Sec 2.2",
+        page_number=2,
+        text="A tracking link is automatically dispatched via email and SMS within 24 hours of package departure from our warehouse. Standard shipping can deliver to PO Boxes and military APO/FPO addresses via USPS, but Expedited and Overnight deliveries require a physical street address through FedEx or UPS.",
+    )
+
+    # 1. When ONLY the tracking passage is provided, it does not answer cutoff time
+    passages_tracking_only = [{"chunk": tracking_chunk, "rerank_score": -0.91}]
+    ans_tracking = generator.generate(
+        question="What is the daily cutoff time for Overnight Priority delivery?",
+        retrieved_passages=passages_tracking_only,
+    )
+    # The tracking passage alone must NOT produce a valid citation claiming to answer the cutoff time
+    assert "1:00 PM" not in ans_tracking.answer
+    assert not any(c.get("chunk_id") == "shipping_delivery_c1" for c in ans_tracking.citations)
+
+    # 2. When candidate pool contains both chunks, generator must correctly select c1 (Page 1)
+    passages_both = [
+        {"chunk": tracking_chunk, "rerank_score": -0.91},
+        {"chunk": cutoff_chunk, "rerank_score": -1.23},
+    ]
+    ans_correct = generator.generate(
+        question="What is the daily cutoff time for Overnight Priority delivery?",
+        retrieved_passages=passages_both,
+    )
+
+    assert "1:00 PM" in ans_correct.answer
+    assert ans_correct.is_supported is True
+    assert len(ans_correct.citations) > 0
+    top_cite = ans_correct.citations[0]
+    assert top_cite["chunk_id"] == "shipping_delivery_c1"
+    assert top_cite["page_number"] == 1
+    assert top_cite["is_validated"] is True
+    assert ans_correct.citation_validation_passed is True
 

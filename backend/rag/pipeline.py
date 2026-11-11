@@ -159,6 +159,7 @@ class CustomerSupportRAGPipeline:
                         query_vec=query_vec,
                         kb_version=kb_ver,
                         model=model_name,
+                        query_text=clean_q,
                     )
                     if sem_hit and sem_data:
                         cached_data = sem_data
@@ -229,7 +230,15 @@ class CustomerSupportRAGPipeline:
         effective_sources = gen_result.citations if gen_result.citations else gen_result.sources
 
         # 4.4 Write-Through Storage on Miss: Persist answer + validated citations + query vector
-        if gen_result.is_supported and gen_result.answer and not gen_result.error and not skip_cache:
+        # Rule: Cache a supported answer ONLY if it has at least one citation AND citation validation passed
+        if (
+            gen_result.is_supported
+            and gen_result.answer
+            and not gen_result.error
+            and not skip_cache
+            and len(effective_sources) > 0
+            and gen_result.citation_validation_passed
+        ):
             try:
                 query_vec = None
                 if self.dense_retriever:

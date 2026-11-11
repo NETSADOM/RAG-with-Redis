@@ -570,7 +570,7 @@ export default function Home() {
             <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
               <span className="bg-white/5 px-2 py-1 rounded">Page {activeEvidence.page_number || 1}</span>
               <span className="bg-white/5 px-2 py-1 rounded">{activeEvidence.section}</span>
-              {activeEvidence.source_url && (
+              {activeEvidence.source_url && (activeEvidence.source_url.startsWith("http://") || activeEvidence.source_url.startsWith("https://")) && (
                 <a 
                   href={activeEvidence.source_url} 
                   target="_blank" 

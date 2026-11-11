@@ -1,9 +1,11 @@
 {
   "metrics": {
-    "retrieval_recall_pct": 95.0,
-    "citation_accuracy_pct": 84.44,
+    "retrieval_recall_pct": 91.67,
+    "citation_accuracy_pct": 81.67,
+    "supportedness_pct": 100.0,
     "anti_hallucination_rate_pct": 80.0,
-    "avg_cold_latency_ms": 393.73,
+    "citation_validation_rate_pct": 100.0,
+    "avg_cold_latency_ms": 321.24,
     "total_questions": 40
   },
   "results": [
@@ -14,9 +16,9 @@
       "answer": "According to [1] Refunds and Returns Policy - Standard Return Window (Page 1, Standard Return Window & Eligibility):\nNovaCart Essentials offers a 30-day return policy for most physical items starting from the delivery date recorded by the courier. To qualify for a full refund, items must be in their original, unused condition, with all tags attached and inside the original manufacturer packaging. Certain categories including opened personal hygiene goods, perishable food items, gift cards, and downloadable software licenses are strictly non-returnable unless defective upon delivery.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 431.63,
+      "latency_ms": 453.67,
       "cited_sources_count": 1
     },
     {
@@ -26,9 +28,9 @@
       "answer": "According to [1] Refunds and Returns Policy - Standard Return Window (Page 1, Standard Return Window & Eligibility):\nNovaCart Essentials offers a 30-day return policy for most physical items starting from the delivery date recorded by the courier. To qualify for a full refund, items must be in their original, unused condition, with all tags attached and inside the original manufacturer packaging. Certain categories including opened personal hygiene goods, perishable food items, gift cards, and downloadable software licenses are strictly non-returnable unless defective upon delivery.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 317.67,
+      "latency_ms": 352.72,
       "cited_sources_count": 1
     },
     {
@@ -38,9 +40,9 @@
       "answer": "According to [1] Refunds and Returns Policy - Return Shipping & Restocking Fees (Page 1, Shipping Labels & Restocking Fees):\nFor returns initiated due to customer preference, change of mind, or accidental ordering, a prepaid return shipping label can be generated in your account portal for a flat deduction of $5.99 from your refund total. Return shipping is 100% free if the return is due to our fulfillment error, a damaged product, or a verified manufacturer defect. NovaCart does not charge restocking fees on apparel, footwear, or standard accessories. However, high-value electronics and heavy appliances opened and returned without defect are subject to a 10% open-box restocking fee.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 349.84,
+      "latency_ms": 414.18,
       "cited_sources_count": 1
     },
     {
@@ -50,9 +52,9 @@
       "answer": "According to [1] Refunds and Returns Policy - Return Shipping & Restocking Fees (Page 1, Shipping Labels & Restocking Fees):\nFor returns initiated due to customer preference, change of mind, or accidental ordering, a prepaid return shipping label can be generated in your account portal for a flat deduction of $5.99 from your refund total. Return shipping is 100% free if the return is due to our fulfillment error, a damaged product, or a verified manufacturer defect. NovaCart does not charge restocking fees on apparel, footwear, or standard accessories. However, high-value electronics and heavy appliances opened and returned without defect are subject to a 10% open-box restocking fee.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 388.71,
+      "latency_ms": 335.1,
       "cited_sources_count": 1
     },
     {
@@ -62,9 +64,9 @@
       "answer": "According to [1] Refunds and Returns Policy - Refund Processing Timelines (Page 2, Refund Processing & Payout Timelines):\nOnce your returned package reaches our warehouse, inspection takes 2 to 3 business days. Once approved, the refund is initiated immediately. Funds typically appear on your original payment method within 3 to 5 business days for credit/debit cards, 1 to 2 business days for PayPal, and within 24 hours for NovaCart Store Credit. If you paid using Klarna or Afterpay installment plans, future installments are automatically cancelled and any paid installments are reimbursed to your card within 5 to 7 business days.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 333.05,
+      "latency_ms": 300.87,
       "cited_sources_count": 1
     },
     {
@@ -74,9 +76,9 @@
       "answer": "According to [1] Refunds and Returns Policy - Refund Processing Timelines (Page 2, Refund Processing & Payout Timelines):\nOnce your returned package reaches our warehouse, inspection takes 2 to 3 business days. Once approved, the refund is initiated immediately. Funds typically appear on your original payment method within 3 to 5 business days for credit/debit cards, 1 to 2 business days for PayPal, and within 24 hours for NovaCart Store Credit. If you paid using Klarna or Afterpay installment plans, future installments are automatically cancelled and any paid installments are reimbursed to your card within 5 to 7 business days.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 362.88,
+      "latency_ms": 309.83,
       "cited_sources_count": 1
     },
     {
@@ -86,21 +88,21 @@
       "answer": "According to [1] Shipping and Delivery Policy - Shipping Speeds & Costs (Page 1, Shipping Methods & Transit Times):\nNovaCart offers three primary domestic shipping tiers: Standard Shipping (3-5 business days) costs $4.99 or is completely FREE on all orders totaling $50.00 or more before taxes. Expedited Shipping (2 business days) is available for $9.99. Overnight Priority Delivery (next business day if ordered before 1:00 PM EST) is available for $19.99. Orders are processed at our fulfillment centers Monday through Friday, excluding federal holidays. Orders placed over the weekend begin processing the next business day.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 350.93,
+      "latency_ms": 307.32,
       "cited_sources_count": 1
     },
     {
       "id": "EF-08",
       "category": "exact_fact",
       "question": "What is the daily cutoff time for Overnight Priority delivery?",
-      "answer": "According to [1] Shipping and Delivery Policy - Tracking and Address Delivery (Page 2, Tracking Numbers & PO Box Delivery):\nA tracking link is automatically dispatched via email and SMS within 24 hours of package departure from our warehouse. Standard shipping can deliver to PO Boxes and military APO/FPO addresses via USPS, but Expedited and Overnight deliveries require a physical street address through FedEx or UPS. International delivery is currently supported to Canada, the United Kingdom, and the European Union, with delivery times ranging between 7 and 14 business days. Customs duties and import VAT are calculated and collected at checkout so there are no surprise fees at your doorstep.",
+      "answer": "According to [2] Shipping and Delivery Policy - Shipping Speeds & Costs (Page 1, Shipping Methods & Transit Times):\nNovaCart offers three primary domestic shipping tiers: Standard Shipping (3-5 business days) costs $4.99 or is completely FREE on all orders totaling $50.00 or more before taxes. Expedited Shipping (2 business days) is available for $9.99. Overnight Priority Delivery (next business day if ordered before 1:00 PM EST) is available for $19.99. Orders are processed at our fulfillment centers Monday through Friday, excluding federal holidays. Orders placed over the weekend begin processing the next business day.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 308.72,
+      "latency_ms": 284.61,
       "cited_sources_count": 1
     },
     {
@@ -110,9 +112,9 @@
       "answer": "According to [1] Shipping and Delivery Policy - Tracking and Address Delivery (Page 2, Tracking Numbers & PO Box Delivery):\nA tracking link is automatically dispatched via email and SMS within 24 hours of package departure from our warehouse. Standard shipping can deliver to PO Boxes and military APO/FPO addresses via USPS, but Expedited and Overnight deliveries require a physical street address through FedEx or UPS. International delivery is currently supported to Canada, the United Kingdom, and the European Union, with delivery times ranging between 7 and 14 business days. Customs duties and import VAT are calculated and collected at checkout so there are no surprise fees at your doorstep.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 321.71,
+      "latency_ms": 315.25,
       "cited_sources_count": 1
     },
     {
@@ -120,11 +122,11 @@
       "category": "exact_fact",
       "question": "Which international countries does NovaCart currently ship to?",
       "answer": "According to [1] Shipping and Delivery Policy - Shipping Speeds & Costs (Page 1, Shipping Methods & Transit Times):\nNovaCart offers three primary domestic shipping tiers: Standard Shipping (3-5 business days) costs $4.99 or is completely FREE on all orders totaling $50.00 or more before taxes. Expedited Shipping (2 business days) is available for $9.99. Overnight Priority Delivery (next business day if ordered before 1:00 PM EST) is available for $19.99. Orders are processed at our fulfillment centers Monday through Friday, excluding federal holidays. Orders placed over the weekend begin processing the next business day.",
-      "retrieval_recall": 1.0,
-      "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "retrieval_recall": 0.0,
+      "citation_accuracy": 0.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 319.82,
+      "latency_ms": 299.18,
       "cited_sources_count": 1
     },
     {
@@ -134,9 +136,9 @@
       "answer": "According to [1] Order Cancellation Policy - Self-Service Cancellation Window (Page 1, 30-Minute Cancellation Grace Period):\nCustomers have a 30-minute self-service grace period immediately after order submission to cancel an order directly from their account dashboard by navigating to 'My Orders' and clicking 'Cancel Order'. During this 30-minute window, a full refund is immediately credited back to the original payment method without processing deductions. Once the 30-minute window expires, orders are locked and transmitted to the automated warehouse sorting lines and cannot be cancelled or intercepted.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 330.8,
+      "latency_ms": 282.39,
       "cited_sources_count": 1
     },
     {
@@ -146,9 +148,9 @@
       "answer": "According to [1] Order Cancellation Policy - Address Changes & Post-Shipment Recourse (Page 1, Address Modifications & Return Upon Delivery):\nIf you need to change your shipping address, you must do so within the initial 30-minute window. Customer support cannot manually adjust shipping destinations once an order has progressed to 'Processing' or 'Dispatched'. If your order has already shipped, you cannot cancel it mid-transit; you should wait for the package to arrive, refuse the parcel at delivery, or generate a free prepaid return label in your account portal once it is delivered.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 336.55,
+      "latency_ms": 311.43,
       "cited_sources_count": 1
     },
     {
@@ -158,9 +160,9 @@
       "answer": "According to [1] Damaged or Defective Items - Reporting and Proof (Page 1, Reporting Window & Photo Proof Requirements):\nIf your order arrives damaged, shattered, or defective, you must report the issue within 48 hours of delivery confirmation. Contact customer support via our portal or live chat with your order number, a clear photograph showing the shipping carton and damaged item, and a description of the defect. We will immediately ship an expedited replacement at zero cost or issue a 100% full refund including all original shipping fees. You are not required to return shattered or hazardous broken goods unless requested for safety inspection.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 326.7,
+      "latency_ms": 294.84,
       "cited_sources_count": 1
     },
     {
@@ -170,9 +172,9 @@
       "answer": "According to [1] Missing Items and Lost Packages - Investigation Process (Page 1, Missing Items & Marked Delivered But Not Received):\nIf tracking indicates your package was 'Delivered' but you cannot find it, please check side porches, building reception desks, and check with household members. Carriers occasionally scan packages up to 24 hours prior to actual drop-off. If the package has still not appeared after 24 hours of delivery status (and within 7 days of the scan), submit a 'Lost Parcel Claim' in our help center. NovaCart will initiate a carrier trace; if unresolved within 48 hours, we will either resend your order via priority courier or issue a complete refund.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 340.79,
+      "latency_ms": 304.08,
       "cited_sources_count": 1
     },
     {
@@ -182,9 +184,9 @@
       "answer": "According to [1] Payment Methods - Accepted Forms of Payment (Page 1, Accepted Payment Types):\nNovaCart accepts all major credit and debit cards including Visa, Mastercard, American Express, Discover, and JCB. Digital wallets including Apple Pay, Google Pay, and PayPal are fully supported on desktop and mobile web. Buy Now Pay Later (BNPL) options are provided via Klarna and Afterpay for orders between $35.00 and $1,500.00. We do not accept personal checks, cash-on-delivery (COD), money orders, or cryptocurrencies. NovaCart Gift Cards can be combined with credit cards or PayPal to cover remaining balances.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 342.82,
+      "latency_ms": 312.42,
       "cited_sources_count": 1
     },
     {
@@ -194,9 +196,9 @@
       "answer": "According to [1] Account Security - Password Reset & Two-Factor Authentication (Page 1, Password Resets & 2FA Setup):\nTo reset a forgotten password, visit the login page and click 'Forgot Password'. A secure 6-digit verification code will be sent to your registered email address; this code expires in 15 minutes. For enhanced protection, customers can enable Two-Factor Authentication (2FA) inside 'Account Settings > Security' using SMS or authenticator apps such as Google Authenticator and 1Password. If you suspect unauthorized access, immediately change your password and click 'Log Out of All Devices' in account settings.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 330.69,
+      "latency_ms": 320.25,
       "cited_sources_count": 1
     },
     {
@@ -206,9 +208,9 @@
       "answer": "According to [1] Warranty Policy - 1-Year Limited Hardware Warranty (Page 1, NovaCart 1-Year Limited Warranty Terms):\nAll NovaCart branded consumer electronics, audio gear, and smart home hardware include a complimentary 1-Year Limited Manufacturer Warranty covering internal hardware failures, battery defects, and manufacturing workmanship. The warranty does not cover accidental damage, liquid spills, cracked screens, cosmetic wear-and-tear, or unauthorized repairs. To submit a warranty claim, provide your original order number and a brief video exhibiting the malfunction. Approved claims receive a free brand-new replacement unit with prepaid return shipping for the defective device.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 336.42,
+      "latency_ms": 340.08,
       "cited_sources_count": 1
     },
     {
@@ -218,9 +220,9 @@
       "answer": "According to [1] Warranty Policy - 1-Year Limited Hardware Warranty (Page 1, NovaCart 1-Year Limited Warranty Terms):\nAll NovaCart branded consumer electronics, audio gear, and smart home hardware include a complimentary 1-Year Limited Manufacturer Warranty covering internal hardware failures, battery defects, and manufacturing workmanship. The warranty does not cover accidental damage, liquid spills, cracked screens, cosmetic wear-and-tear, or unauthorized repairs. To submit a warranty claim, provide your original order number and a brief video exhibiting the malfunction. Approved claims receive a free brand-new replacement unit with prepaid return shipping for the defective device.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 403.16,
+      "latency_ms": 327.08,
       "cited_sources_count": 1
     },
     {
@@ -230,9 +232,9 @@
       "answer": "According to [1] Damaged or Defective Items - Reporting and Proof (Page 1, Reporting Window & Photo Proof Requirements):\nIf your order arrives damaged, shattered, or defective, you must report the issue within 48 hours of delivery confirmation. Contact customer support via our portal or live chat with your order number, a clear photograph showing the shipping carton and damaged item, and a description of the defect. We will immediately ship an expedited replacement at zero cost or issue a 100% full refund including all original shipping fees. You are not required to return shattered or hazardous broken goods unless requested for safety inspection.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 0.5,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 435.01,
+      "latency_ms": 345.44,
       "cited_sources_count": 1
     },
     {
@@ -242,9 +244,9 @@
       "answer": "According to [1] Order Cancellation Policy - Self-Service Cancellation Window (Page 1, 30-Minute Cancellation Grace Period):\nCustomers have a 30-minute self-service grace period immediately after order submission to cancel an order directly from their account dashboard by navigating to 'My Orders' and clicking 'Cancel Order'. During this 30-minute window, a full refund is immediately credited back to the original payment method without processing deductions. Once the 30-minute window expires, orders are locked and transmitted to the automated warehouse sorting lines and cannot be cancelled or intercepted.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 0.5,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 486.29,
+      "latency_ms": 315.23,
       "cited_sources_count": 1
     },
     {
@@ -254,9 +256,9 @@
       "answer": "According to [1] Warranty Policy - 1-Year Limited Hardware Warranty (Page 1, NovaCart 1-Year Limited Warranty Terms):\nAll NovaCart branded consumer electronics, audio gear, and smart home hardware include a complimentary 1-Year Limited Manufacturer Warranty covering internal hardware failures, battery defects, and manufacturing workmanship. The warranty does not cover accidental damage, liquid spills, cracked screens, cosmetic wear-and-tear, or unauthorized repairs. To submit a warranty claim, provide your original order number and a brief video exhibiting the malfunction. Approved claims receive a free brand-new replacement unit with prepaid return shipping for the defective device.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 0.5,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 412.46,
+      "latency_ms": 327.32,
       "cited_sources_count": 1
     },
     {
@@ -266,9 +268,9 @@
       "answer": "According to [1] Order Cancellation Policy - Address Changes & Post-Shipment Recourse (Page 1, Address Modifications & Return Upon Delivery):\nIf you need to change your shipping address, you must do so within the initial 30-minute window. Customer support cannot manually adjust shipping destinations once an order has progressed to 'Processing' or 'Dispatched'. If your order has already shipped, you cannot cancel it mid-transit; you should wait for the package to arrive, refuse the parcel at delivery, or generate a free prepaid return label in your account portal once it is delivered.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 0.5,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 404.27,
+      "latency_ms": 335.77,
       "cited_sources_count": 1
     },
     {
@@ -278,9 +280,9 @@
       "answer": "According to [1] Refunds and Returns Policy - Refund Processing Timelines (Page 2, Refund Processing & Payout Timelines):\nOnce your returned package reaches our warehouse, inspection takes 2 to 3 business days. Once approved, the refund is initiated immediately. Funds typically appear on your original payment method within 3 to 5 business days for credit/debit cards, 1 to 2 business days for PayPal, and within 24 hours for NovaCart Store Credit. If you paid using Klarna or Afterpay installment plans, future installments are automatically cancelled and any paid installments are reimbursed to your card within 5 to 7 business days.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 0.5,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 468.95,
+      "latency_ms": 326.3,
       "cited_sources_count": 1
     },
     {
@@ -290,9 +292,9 @@
       "answer": "According to [1] Shipping and Delivery Policy - Tracking and Address Delivery (Page 2, Tracking Numbers & PO Box Delivery):\nA tracking link is automatically dispatched via email and SMS within 24 hours of package departure from our warehouse. Standard shipping can deliver to PO Boxes and military APO/FPO addresses via USPS, but Expedited and Overnight deliveries require a physical street address through FedEx or UPS. International delivery is currently supported to Canada, the United Kingdom, and the European Union, with delivery times ranging between 7 and 14 business days. Customs duties and import VAT are calculated and collected at checkout so there are no surprise fees at your doorstep.",
       "retrieval_recall": 0.5,
       "citation_accuracy": 0.5,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 427.16,
+      "latency_ms": 318.88,
       "cited_sources_count": 1
     },
     {
@@ -301,10 +303,10 @@
       "question": "If an item in an Overnight Priority delivery arrives broken, do I have to pay to return it?",
       "answer": "According to [1] Damaged or Defective Items - Reporting and Proof (Page 1, Reporting Window & Photo Proof Requirements):\nIf your order arrives damaged, shattered, or defective, you must report the issue within 48 hours of delivery confirmation. Contact customer support via our portal or live chat with your order number, a clear photograph showing the shipping carton and damaged item, and a description of the defect. We will immediately ship an expedited replacement at zero cost or issue a 100% full refund including all original shipping fees. You are not required to return shattered or hazardous broken goods unless requested for safety inspection.",
       "retrieval_recall": 0.5,
-      "citation_accuracy": 0.3333333333333333,
-      "faithfulness": 1.0,
+      "citation_accuracy": 0.5,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 348.1,
+      "latency_ms": 314.3,
       "cited_sources_count": 1
     },
     {
@@ -314,9 +316,9 @@
       "answer": "According to [1] Account Management - Deletion & Guest Checkout Order Linking (Page 1, Account Deletion & Merging Guest Orders):\nIf you completed purchases as a guest, you can link those past orders to a newly created account by ensuring your account email matches the email address supplied during guest checkout. Under global data protection regulations (GDPR and CCPA), you can request complete account deletion and data anonymization by navigating to 'Account Settings > Privacy > Delete Account'. Account deletion permanently deletes order history, saved addresses, and unredeemed loyalty reward points and cannot be undone.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 333.59,
+      "latency_ms": 317.68,
       "cited_sources_count": 1
     },
     {
@@ -326,9 +328,9 @@
       "answer": "According to [1] Missing Items and Lost Packages - Investigation Process (Page 1, Missing Items & Marked Delivered But Not Received):\nIf tracking indicates your package was 'Delivered' but you cannot find it, please check side porches, building reception desks, and check with household members. Carriers occasionally scan packages up to 24 hours prior to actual drop-off. If the package has still not appeared after 24 hours of delivery status (and within 7 days of the scan), submit a 'Lost Parcel Claim' in our help center. NovaCart will initiate a carrier trace; if unresolved within 48 hours, we will either resend your order via priority courier or issue a complete refund.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 382.22,
+      "latency_ms": 316.94,
       "cited_sources_count": 1
     },
     {
@@ -338,9 +340,9 @@
       "answer": "According to [1] Payment Methods - Accepted Forms of Payment (Page 1, Accepted Payment Types):\nNovaCart accepts all major credit and debit cards including Visa, Mastercard, American Express, Discover, and JCB. Digital wallets including Apple Pay, Google Pay, and PayPal are fully supported on desktop and mobile web. Buy Now Pay Later (BNPL) options are provided via Klarna and Afterpay for orders between $35.00 and $1,500.00. We do not accept personal checks, cash-on-delivery (COD), money orders, or cryptocurrencies. NovaCart Gift Cards can be combined with credit cards or PayPal to cover remaining balances.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 0.5,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 422.24,
+      "latency_ms": 336.73,
       "cited_sources_count": 1
     },
     {
@@ -350,9 +352,9 @@
       "answer": "According to [1] Account Management - Deletion & Guest Checkout Order Linking (Page 1, Account Deletion & Merging Guest Orders):\nIf you completed purchases as a guest, you can link those past orders to a newly created account by ensuring your account email matches the email address supplied during guest checkout. Under global data protection regulations (GDPR and CCPA), you can request complete account deletion and data anonymization by navigating to 'Account Settings > Privacy > Delete Account'. Account deletion permanently deletes order history, saved addresses, and unredeemed loyalty reward points and cannot be undone.",
       "retrieval_recall": 0.5,
       "citation_accuracy": 0.5,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 569.31,
+      "latency_ms": 330.77,
       "cited_sources_count": 1
     },
     {
@@ -362,9 +364,9 @@
       "answer": "According to [1] Warranty Policy - 1-Year Limited Hardware Warranty (Page 1, NovaCart 1-Year Limited Warranty Terms):\nAll NovaCart branded consumer electronics, audio gear, and smart home hardware include a complimentary 1-Year Limited Manufacturer Warranty covering internal hardware failures, battery defects, and manufacturing workmanship. The warranty does not cover accidental damage, liquid spills, cracked screens, cosmetic wear-and-tear, or unauthorized repairs. To submit a warranty claim, provide your original order number and a brief video exhibiting the malfunction. Approved claims receive a free brand-new replacement unit with prepaid return shipping for the defective device.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 739.68,
+      "latency_ms": 314.12,
       "cited_sources_count": 1
     },
     {
@@ -374,21 +376,21 @@
       "answer": "I'm sorry, but our official NovaCart Essentials customer support documentation does not contain information related to your inquiry. Please contact our support team directly.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 457.93,
+      "latency_ms": 272.67,
       "cited_sources_count": 0
     },
     {
       "id": "UN-32",
       "category": "unsupported",
       "question": "Can I book domestic or international airline flight tickets through NovaCart?",
-      "answer": "According to [1] Payment Methods - Accepted Forms of Payment (Page 1, Accepted Payment Types):\nNovaCart accepts all major credit and debit cards including Visa, Mastercard, American Express, Discover, and JCB. Digital wallets including Apple Pay, Google Pay, and PayPal are fully supported on desktop and mobile web. Buy Now Pay Later (BNPL) options are provided via Klarna and Afterpay for orders between $35.00 and $1,500.00. We do not accept personal checks, cash-on-delivery (COD), money orders, or cryptocurrencies. NovaCart Gift Cards can be combined with credit cards or PayPal to cover remaining balances.",
+      "answer": "According to [2] Shipping and Delivery Policy - Shipping Speeds & Costs (Page 1, Shipping Methods & Transit Times):\nNovaCart offers three primary domestic shipping tiers: Standard Shipping (3-5 business days) costs $4.99 or is completely FREE on all orders totaling $50.00 or more before taxes. Expedited Shipping (2 business days) is available for $9.99. Overnight Priority Delivery (next business day if ordered before 1:00 PM EST) is available for $19.99. Orders are processed at our fulfillment centers Monday through Friday, excluding federal holidays. Orders placed over the weekend begin processing the next business day.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 0.0,
-      "faithfulness": 0.0,
+      "supportedness": 0.0,
       "citation_validation_passed": true,
-      "latency_ms": 563.87,
+      "latency_ms": 302.07,
       "cited_sources_count": 1
     },
     {
@@ -398,9 +400,9 @@
       "answer": "I'm sorry, but our official NovaCart Essentials customer support documentation does not contain information related to your inquiry. Please contact our support team directly.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 385.14,
+      "latency_ms": 339.99,
       "cited_sources_count": 0
     },
     {
@@ -410,9 +412,9 @@
       "answer": "I'm sorry, but our official NovaCart Essentials customer support documentation does not contain information related to your inquiry. Please contact our support team directly.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 410.72,
+      "latency_ms": 330.13,
       "cited_sources_count": 0
     },
     {
@@ -422,9 +424,9 @@
       "answer": "I'm sorry, but our official NovaCart Essentials customer support documentation does not contain information related to your inquiry. Please contact our support team directly.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 425.9,
+      "latency_ms": 294.6,
       "cited_sources_count": 0
     },
     {
@@ -434,9 +436,9 @@
       "answer": "I'm sorry, but our official NovaCart Essentials customer support documentation does not contain information related to your inquiry. Please contact our support team directly.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 407.45,
+      "latency_ms": 326.27,
       "cited_sources_count": 0
     },
     {
@@ -446,9 +448,9 @@
       "answer": "I'm sorry, but our official NovaCart Essentials customer support documentation does not contain information related to your inquiry. Please contact our support team directly.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 371.15,
+      "latency_ms": 307.33,
       "cited_sources_count": 0
     },
     {
@@ -458,9 +460,9 @@
       "answer": "According to [1] Refunds and Returns Policy - Standard Return Window (Page 1, Standard Return Window & Eligibility):\nNovaCart Essentials offers a 30-day return policy for most physical items starting from the delivery date recorded by the courier. To qualify for a full refund, items must be in their original, unused condition, with all tags attached and inside the original manufacturer packaging. Certain categories including opened personal hygiene goods, perishable food items, gift cards, and downloadable software licenses are strictly non-returnable unless defective upon delivery.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 0.0,
-      "faithfulness": 0.0,
+      "supportedness": 0.0,
       "citation_validation_passed": true,
-      "latency_ms": 333.8,
+      "latency_ms": 297.11,
       "cited_sources_count": 1
     },
     {
@@ -470,9 +472,9 @@
       "answer": "I'm sorry, but our official NovaCart Essentials customer support documentation does not contain information related to your inquiry. Please contact our support team directly.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 333.44,
+      "latency_ms": 305.31,
       "cited_sources_count": 0
     },
     {
@@ -482,9 +484,9 @@
       "answer": "I'm sorry, but our official NovaCart Essentials customer support documentation does not contain information related to your inquiry. Please contact our support team directly.",
       "retrieval_recall": 1.0,
       "citation_accuracy": 1.0,
-      "faithfulness": 1.0,
+      "supportedness": 1.0,
       "citation_validation_passed": true,
-      "latency_ms": 397.43,
+      "latency_ms": 309.31,
       "cited_sources_count": 0
     }
   ]

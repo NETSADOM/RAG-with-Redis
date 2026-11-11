@@ -72,10 +72,11 @@ class CustomerSupportGenerator:
     ) -> Tuple[List[Dict[str, Any]], bool]:
         """
         Track which passages the answer actually cites and validate references against retrieved chunks.
+        Accepts explicit bracketed citations [1], [2], etc. as instructed in the prompt.
+        Deduplicates valid references in order of appearance and flags out-of-range numbers.
         Returns:
             (validated_citations, all_references_valid)
         """
-        all_retrieved_map: Dict[str, Dict[str, Any]] = {}
         index_map: Dict[int, Dict[str, Any]] = {}
 
         for idx, p in enumerate(retrieved_passages, 1):
@@ -87,20 +88,18 @@ class CustomerSupportGenerator:
                 "chunk_id": chunk.chunk_id,
                 "page_number": getattr(chunk, "page_number", 1),
                 "source_ref": chunk.source_ref,
-                "source_url": getattr(chunk, "source_url", f"/docs/policies/{chunk.doc_id}.pdf#page={getattr(chunk, 'page_number', 1)}"),
+                "source_url": getattr(chunk, "source_url", ""),
                 "supporting_passage": chunk.text,
                 "relevance_score": round(float(p.get("rerank_score", p.get("rrf_score", 0.0))), 4),
                 "is_validated": True,
             }
-            all_retrieved_map[chunk.chunk_id.lower()] = info
-            all_retrieved_map[chunk.doc_id.lower()] = info
             index_map[idx] = info
 
         cited_sources: List[Dict[str, Any]] = []
         seen_chunks: Set[str] = set()
         all_references_valid = True
 
-        # 1. Check for numerical bracketed citations: e.g. [1], [2], [1, 2]
+        # Extract explicit numerical bracketed citations: e.g. [1], [2]
         numeric_citations = re.findall(r"\[(\d+)\]", answer)
         for num_str in numeric_citations:
             num = int(num_str)
@@ -110,58 +109,41 @@ class CustomerSupportGenerator:
                     seen_chunks.add(entry["chunk_id"])
                     cited_sources.append(entry)
             else:
-                # Reference cited by LLM that was not in retrieved context
+                # Flag out-of-range or hallucinated citation number
                 all_references_valid = False
 
-        # 2. Check for explicit chunk ID or section name mentions in answer
-        for chunk_id, info in all_retrieved_map.items():
-            if chunk_id in answer.lower():
-                if info["chunk_id"] not in seen_chunks:
-                    seen_chunks.add(info["chunk_id"])
-                    cited_sources.append(info)
-
-        # 3. Fallback heuristic: If no bracket markers used, evaluate key fact overlap
-        if not cited_sources and retrieved_passages:
-            ans_lower = answer.lower()
-            for p in retrieved_passages:
-                chunk = p["chunk"]
-                # Check for significant text overlap or shared distinctive keywords
-                words = [w for w in re.findall(r"\b\w{4,}\b", chunk.text.lower()) if w not in {"with", "that", "this", "from", "have"}]
-                overlap_count = sum(1 for w in words if w in ans_lower)
-                if overlap_count >= 3:
-                    if chunk.chunk_id not in seen_chunks:
-                        seen_chunks.add(chunk.chunk_id)
-                        info = {
-                            "doc_id": chunk.doc_id,
-                            "title": chunk.title,
-                            "section": chunk.section,
-                            "chunk_id": chunk.chunk_id,
-                            "page_number": getattr(chunk, "page_number", 1),
-                            "source_ref": chunk.source_ref,
-                            "source_url": getattr(chunk, "source_url", f"/docs/policies/{chunk.doc_id}.pdf#page={getattr(chunk, 'page_number', 1)}"),
-                            "supporting_passage": chunk.text,
-                            "relevance_score": round(float(p.get("rerank_score", p.get("rrf_score", 0.0))), 4),
-                            "is_validated": True,
-                        }
-                        cited_sources.append(info)
-
-        # If still empty (e.g. general response), include top 1 validated context
-        if not cited_sources and retrieved_passages:
-            top_chunk = retrieved_passages[0]["chunk"]
-            cited_sources.append({
-                "doc_id": top_chunk.doc_id,
-                "title": top_chunk.title,
-                "section": top_chunk.section,
-                "chunk_id": top_chunk.chunk_id,
-                "page_number": getattr(top_chunk, "page_number", 1),
-                "source_ref": top_chunk.source_ref,
-                "source_url": getattr(top_chunk, "source_url", f"/docs/policies/{top_chunk.doc_id}.pdf#page={getattr(top_chunk, 'page_number', 1)}"),
-                "supporting_passage": top_chunk.text,
-                "relevance_score": round(float(retrieved_passages[0].get("rerank_score", retrieved_passages[0].get("rrf_score", 0.0))), 4),
-                "is_validated": True,
-            })
-
         return cited_sources, all_references_valid
+
+    def _select_best_supporting_passage(
+        self,
+        question: str,
+        retrieved_passages: List[Dict[str, Any]],
+    ) -> Tuple[int, Dict[str, Any]]:
+        """
+        Identify candidate passage with strongest keyword and relevance alignment.
+        """
+        if not retrieved_passages:
+            return 1, {}
+        q_tokens = set(re.findall(r"\b\w{3,}\b", question.lower())) - {
+            "what", "when", "where", "which", "how", "the", "for", "and",
+            "does", "can", "are", "with", "from", "that", "this", "have"
+        }
+        best_idx = 1
+        best_passage = retrieved_passages[0]
+        best_score = -999.0
+
+        for idx, p in enumerate(retrieved_passages, 1):
+            chunk = p["chunk"]
+            combined = f"{chunk.title} {chunk.section} {chunk.text}".lower()
+            match_count = sum(1 for tok in q_tokens if tok in combined)
+            rel_score = float(p.get("rerank_score", p.get("rrf_score", 0.0)))
+            total_score = match_count * 10.0 + rel_score
+            if total_score > best_score:
+                best_score = total_score
+                best_idx = idx
+                best_passage = p
+
+        return best_idx, best_passage
 
     def generate(
         self,
@@ -262,11 +244,11 @@ class CustomerSupportGenerator:
 
         # 4. Invoke LLM API or grounded offline fallback
         if not self.api_key:
-            top_p = retrieved_passages[0]
-            top_chunk = top_p["chunk"]
+            best_idx, best_p = self._select_best_supporting_passage(question, retrieved_passages)
+            best_chunk = best_p["chunk"]
             fallback_ans = (
-                f"According to [1] {top_chunk.title} (Page {getattr(top_chunk, 'page_number', 1)}, {top_chunk.section}):\n"
-                f"{top_chunk.text}"
+                f"According to [{best_idx}] {best_chunk.title} (Page {getattr(best_chunk, 'page_number', 1)}, {best_chunk.section}):\n"
+                f"{best_chunk.text}"
             )
             active_cites, is_valid = self._extract_and_validate_citations(fallback_ans, retrieved_passages)
             return CustomerSupportAnswer(
@@ -299,9 +281,10 @@ class CustomerSupportGenerator:
             response = requests.post(url, headers=headers, json=payload, timeout=2.5)
             if response.status_code != 200:
                 logger.error(f"[Generator] API call failed ({response.status_code}): {response.text}")
-                top_chunk = retrieved_passages[0]["chunk"]
+                best_idx, best_p = self._select_best_supporting_passage(question, retrieved_passages)
+                top_chunk = best_p["chunk"]
                 fallback_ans = (
-                    f"According to [1] {top_chunk.title} (Page {getattr(top_chunk, 'page_number', 1)}, {top_chunk.section}):\n"
+                    f"According to [{best_idx}] {top_chunk.title} (Page {getattr(top_chunk, 'page_number', 1)}, {top_chunk.section}):\n"
                     f"{top_chunk.text}"
                 )
                 active_cites, is_valid = self._extract_and_validate_citations(fallback_ans, retrieved_passages)
@@ -346,9 +329,10 @@ class CustomerSupportGenerator:
 
         except requests.exceptions.RequestException as e:
             logger.warning(f"[Generator] Network unreachable ({e}). Synthesizing grounded response from context.")
-            top_chunk = retrieved_passages[0]["chunk"]
+            best_idx, best_p = self._select_best_supporting_passage(question, retrieved_passages)
+            top_chunk = best_p["chunk"]
             fallback_ans = (
-                f"According to [1] {top_chunk.title} (Page {getattr(top_chunk, 'page_number', 1)}, {top_chunk.section}):\n"
+                f"According to [{best_idx}] {top_chunk.title} (Page {getattr(top_chunk, 'page_number', 1)}, {top_chunk.section}):\n"
                 f"{top_chunk.text}"
             )
             active_cites, is_valid = self._extract_and_validate_citations(fallback_ans, retrieved_passages)

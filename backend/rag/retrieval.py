@@ -42,7 +42,7 @@ class KBChunk:
         self.source_ref = source_ref
         self.text = text
         self.page_number = page_number
-        self.source_url = source_url or f"/docs/policies/{doc_id}.pdf#page={page_number}"
+        self.source_url = source_url or ""
         self.doc_version = doc_version
 
     def to_dict(self) -> Dict[str, Any]:

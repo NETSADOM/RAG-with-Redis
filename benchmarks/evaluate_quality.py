@@ -52,8 +52,8 @@ def run_quality_evaluation():
 
     results = []
     category_metrics = {
-        "exact_fact": {"count": 0, "recall": [], "citation_acc": [], "supported": [], "latencies": []},
-        "cross_document": {"count": 0, "recall": [], "citation_acc": [], "supported": [], "latencies": []},
+        "exact_fact": {"count": 0, "recall": [], "citation_acc": [], "supportedness": [], "latencies": []},
+        "cross_document": {"count": 0, "recall": [], "citation_acc": [], "supportedness": [], "latencies": []},
         "unsupported": {"count": 0, "refusal_correct": [], "citation_clean": [], "latencies": []},
     }
 
@@ -76,41 +76,55 @@ def run_quality_evaluation():
         cited_chunk_ids = {c.get("chunk_id", "") for c in resp.citations}
         cited_doc_ids = {c.get("doc_id", "") for c in resp.citations}
 
-        # 1. Retrieval Recall
+        # 1. Retrieval Recall: Exact chunk recall when expected chunk IDs exist; fallback to doc IDs
         if cat == "unsupported":
             retrieval_recall = 1.0  # N/A for unsupported
+        elif expected_chunks:
+            hits = len(expected_chunks.intersection(retrieved_chunk_ids))
+            retrieval_recall = min(1.0, hits / len(expected_chunks))
+        elif expected_docs:
+            hits = len(expected_docs.intersection(retrieved_doc_ids))
+            retrieval_recall = min(1.0, hits / len(expected_docs))
         else:
-            hits = len(expected_chunks.intersection(retrieved_chunk_ids)) or len(expected_docs.intersection(retrieved_doc_ids))
-            total_expected = len(expected_chunks) if expected_chunks else 1
-            retrieval_recall = min(1.0, hits / total_expected)
+            retrieval_recall = 1.0
 
-        # 2. Citation Accuracy & Validation
+        # 2. Citation Accuracy: Score citations against expected chunk and page
         citation_valid = resp.citation_validation_passed
         if cat == "unsupported":
             # For unsupported, citation accuracy is 1.0 if it made NO false citations
             citation_accuracy = 1.0 if len(resp.citations) == 0 else 0.0
-        else:
-            # Did cited documents overlap with expected documents?
+        elif expected_chunks:
+            chunk_hits = 0
+            for c in resp.citations:
+                cid = c.get("chunk_id", "")
+                pnum = c.get("page_number", 1)
+                if cid in expected_chunks:
+                    if not expected_pages or pnum in expected_pages:
+                        chunk_hits += 1
+            citation_accuracy = min(1.0, chunk_hits / len(expected_chunks))
+        elif expected_docs:
             doc_overlap = len(expected_docs.intersection(cited_doc_ids))
             citation_accuracy = (doc_overlap / len(expected_docs)) if expected_docs else 1.0
+        else:
+            citation_accuracy = 1.0
 
-        # 3. Faithfulness / Supportedness
+        # 3. Supportedness (formerly faithfulness check)
         if cat == "unsupported":
             # Correct if system refused and flagged is_supported=False
-            faithfulness = 1.0 if not resp.is_supported else 0.0
+            supportedness = 1.0 if not resp.is_supported else 0.0
             category_metrics["unsupported"]["count"] += 1
-            category_metrics["unsupported"]["refusal_correct"].append(faithfulness)
+            category_metrics["unsupported"]["refusal_correct"].append(supportedness)
             category_metrics["unsupported"]["citation_clean"].append(citation_accuracy)
             category_metrics["unsupported"]["latencies"].append(resp.latency_ms)
         else:
-            faithfulness = 1.0 if (resp.is_supported and len(resp.citations) > 0) else 0.0
+            supportedness = 1.0 if (resp.is_supported and len(resp.citations) > 0) else 0.0
             category_metrics[cat]["count"] += 1
             category_metrics[cat]["recall"].append(retrieval_recall)
             category_metrics[cat]["citation_acc"].append(citation_accuracy)
-            category_metrics[cat]["supported"].append(faithfulness)
+            category_metrics[cat]["supportedness"].append(supportedness)
             category_metrics[cat]["latencies"].append(resp.latency_ms)
 
-        print(f"[{idx:02d}/{len(dataset):02d}] {q_id} ({cat:<14}) | Recall: {retrieval_recall:.0%} | CiteAcc: {citation_accuracy:.0%} | Faith: {faithfulness:.0%} | Latency: {resp.latency_ms:.1f}ms")
+        print(f"[{idx:02d}/{len(dataset):02d}] {q_id} ({cat:<14}) | Recall: {retrieval_recall:.0%} | CiteAcc: {citation_accuracy:.0%} | Supp: {supportedness:.0%} | Latency: {resp.latency_ms:.1f}ms")
 
         results.append({
             "id": q_id,
@@ -119,7 +133,7 @@ def run_quality_evaluation():
             "answer": resp.answer,
             "retrieval_recall": retrieval_recall,
             "citation_accuracy": citation_accuracy,
-            "faithfulness": faithfulness,
+            "supportedness": supportedness,
             "citation_validation_passed": citation_valid,
             "latency_ms": resp.latency_ms,
             "cited_sources_count": len(resp.citations),
@@ -134,8 +148,14 @@ def run_quality_evaluation():
     all_cite_acc = category_metrics["exact_fact"]["citation_acc"] + category_metrics["cross_document"]["citation_acc"]
     avg_cite_acc = sum(all_cite_acc) / len(all_cite_acc) if all_cite_acc else 0.0
 
+    all_supp = category_metrics["exact_fact"]["supportedness"] + category_metrics["cross_document"]["supportedness"]
+    avg_supp = sum(all_supp) / len(all_supp) if all_supp else 0.0
+
     unsupported_refusals = category_metrics["unsupported"]["refusal_correct"]
     unsupported_acc = sum(unsupported_refusals) / len(unsupported_refusals) if unsupported_refusals else 0.0
+
+    val_pass_count = sum(1 for r in results if r["citation_validation_passed"])
+    val_pass_rate = (val_pass_count / len(results) * 100.0) if results else 100.0
 
     all_latencies = [r["latency_ms"] for r in results]
     avg_latency = sum(all_latencies) / len(all_latencies) if all_latencies else 0.0
@@ -146,9 +166,10 @@ def run_quality_evaluation():
     print(f"{'Evaluation Metric':<40} | {'Target Benchmark':<18} | {'Measured Score':<18}")
     print("-" * 85)
     print(f"{'Retrieval Recall@K (Factual & Cross-Doc)':<40} | {'> 90.0%':<18} | {avg_recall * 100:.1f}%")
-    print(f"{'Citation Accuracy (Validated References)':<40} | {'> 90.0%':<18} | {avg_cite_acc * 100:.1f}%")
+    print(f"{'Citation Accuracy (Chunk & Page)':<40} | {'> 90.0%':<18} | {avg_cite_acc * 100:.1f}%")
+    print(f"{'Supportedness (Factual & Cross-Doc)':<40} | {'> 90.0%':<18} | {avg_supp * 100:.1f}%")
     print(f"{'Anti-Hallucination Refusal Rate':<40} | {'100.0%':<18} | {unsupported_acc * 100:.1f}%")
-    print(f"{'Citation Reference Validation Pass Rate':<40} | {'100.0%':<18} | 100.0%")
+    print(f"{'Citation Reference Validation Pass Rate':<40} | {'100.0%':<18} | {val_pass_rate:.1f}%")
     print(f"{'Average Cold Generation Latency':<40} | {'< 500 ms':<18} | {avg_latency:.1f} ms")
     print(f"{'Total Questions Evaluated':<40} | {'40':<18} | {len(results)}")
     print("-" * 85)
@@ -162,7 +183,8 @@ def run_quality_evaluation():
         else:
             rec = (sum(data["recall"]) / count) * 100 if count else 0
             cite = (sum(data["citation_acc"]) / count) * 100 if count else 0
-            print(f"• {cat_name.upper():<16} : {count:02d} items | Recall: {rec:.1f}% | Citation Accuracy: {cite:.1f}%")
+            supp = (sum(data["supportedness"]) / count) * 100 if count else 0
+            print(f"• {cat_name.upper():<16} : {count:02d} items | Recall: {rec:.1f}% | CiteAcc: {cite:.1f}% | Supported: {supp:.1f}%")
 
     report_path = Path(__file__).resolve().parent / "evaluation_report.json"
     with open(report_path, "w", encoding="utf-8") as f:
@@ -170,7 +192,9 @@ def run_quality_evaluation():
             "metrics": {
                 "retrieval_recall_pct": round(avg_recall * 100, 2),
                 "citation_accuracy_pct": round(avg_cite_acc * 100, 2),
+                "supportedness_pct": round(avg_supp * 100, 2),
                 "anti_hallucination_rate_pct": round(unsupported_acc * 100, 2),
+                "citation_validation_rate_pct": round(val_pass_rate, 2),
                 "avg_cold_latency_ms": round(avg_latency, 2),
                 "total_questions": len(results),
             },

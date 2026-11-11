@@ -29,8 +29,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (modalPageTag) modalPageTag.textContent = `Page ${src.page_number || 1} · ${src.section || "General"}`;
     if (modalChunkTag) modalChunkTag.textContent = src.chunk_id || "";
     if (modalPdfLink) {
-      modalPdfLink.href = src.source_url || "#";
-      modalPdfLink.textContent = `📄 View PDF Page ${src.page_number || 1} →`;
+      const url = src.source_url || "";
+      const isUsableUrl = url && (url.startsWith("http://") || url.startsWith("https://"));
+      if (isUsableUrl) {
+        modalPdfLink.href = url;
+        modalPdfLink.textContent = `📄 View PDF Page ${src.page_number || 1} →`;
+        modalPdfLink.style.display = "inline-flex";
+      } else {
+        modalPdfLink.style.display = "none";
+      }
     }
     if (modalPassageText) modalPassageText.textContent = src.supporting_passage || src.text_snippet || "Supporting policy excerpt.";
     evidenceModal.style.display = "flex";

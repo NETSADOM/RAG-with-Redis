@@ -30,6 +30,11 @@ import fakeredis
 
 logger = logging.getLogger(__name__)
 
+# Versioned cache namespace keys (bumped to v2 to enforce citation validation)
+KEY_PREFIX = "cs_rag:ans:v2:"
+INDEX_PREFIX = "cs_rag:idx:v2:"
+DOC_PREFIX = "cs_rag:doc:v2:"
+
 
 class CustomerSupportCache:
     """
@@ -48,7 +53,7 @@ class CustomerSupportCache:
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.default_ttl = default_ttl or int(os.getenv("CACHE_TTL", "3600"))
         self.semantic_threshold = semantic_threshold or float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.88"))
-        self.semantic_caching_enabled = os.getenv("ENABLE_SEMANTIC_CACHE", "true").lower() in ("true", "1", "yes")
+        self.semantic_caching_enabled = os.getenv("ENABLE_SEMANTIC_CACHE", "false").lower() in ("true", "1", "yes")
         self.eviction_policy = "allkeys-lfu"
         self.use_fallback = use_fallback
 
@@ -119,10 +124,50 @@ class CustomerSupportCache:
     def generate_cache_key(self, query: str, kb_version: str, model: str = "") -> str:
         """
         Derive a deterministic SHA-256 cache key from normalized query, KB version, and model.
+        Uses versioned KEY_PREFIX (v2) to isolate verified citation entries.
         """
         clean_q = self.normalize_query(query)
-        raw_key = f"support_rag::{clean_q}::kb={kb_version}::m={model}"
-        return f"cs_rag:ans:{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()}"
+        raw_key = f"support_rag::v2::{clean_q}::kb={kb_version}::m={model}"
+        return f"{KEY_PREFIX}{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()}"
+
+    def _is_semantically_incompatible(self, q1: str, q2: str) -> bool:
+        """
+        Guard against semantic false positives.
+        Ensures questions differing in a number, country, or negation don't share an answer.
+        """
+        clean1 = self.normalize_query(q1)
+        clean2 = self.normalize_query(q2)
+
+        # 1. Number difference check (e.g. 30 days vs 60 days)
+        nums1 = set(re.findall(r"\b\d+(?:\.\d+)?\b", clean1))
+        nums2 = set(re.findall(r"\b\d+(?:\.\d+)?\b", clean2))
+        if (nums1 or nums2) and nums1 != nums2:
+            return True
+
+        # 2. Negation difference check (e.g. "can I return" vs "can I not return")
+        negations = {
+            "not", "no", "never", "cannot", "cant", "can't",
+            "wont", "won't", "dont", "don't", "doesnt", "doesn't", "without"
+        }
+        tokens1 = set(re.findall(r"\b\w+\b", clean1.lower()))
+        tokens2 = set(re.findall(r"\b\w+\b", clean2.lower()))
+        has_neg1 = bool(tokens1 & negations)
+        has_neg2 = bool(tokens2 & negations)
+        if has_neg1 != has_neg2:
+            return True
+
+        # 3. Country / Region difference check (e.g. Canada vs UK vs US)
+        countries = {
+            "canada", "uk", "united kingdom", "britain", "us", "usa", "united states",
+            "america", "eu", "europe", "european union", "australia", "germany",
+            "france", "mexico", "japan", "china", "india"
+        }
+        c1 = {c for c in countries if re.search(r"\b" + re.escape(c) + r"\b", clean1)}
+        c2 = {c for c in countries if re.search(r"\b" + re.escape(c) + r"\b", clean2)}
+        if (c1 or c2) and c1 != c2:
+            return True
+
+        return False
 
     def get_answer(
         self,
@@ -170,10 +215,13 @@ class CustomerSupportCache:
         kb_version: str,
         model: str = "",
         threshold: Optional[float] = None,
+        query_text: str = "",
     ) -> Tuple[Optional[Dict[str, Any]], bool, float]:
         """
         Semantic Cache Lookup:
         Reuses verified answers for equivalent questions by comparing query embeddings.
+        Filters candidates by requesting model and validates question compatibility
+        (rejecting questions differing in numbers, countries, or negation).
         Returns:
             (payload, True, max_sim) on Semantic HIT.
             (None, False, max_sim) on Semantic MISS.
@@ -184,7 +232,7 @@ class CustomerSupportCache:
         cutoff = threshold if threshold is not None else self.semantic_threshold
         start_t = time.perf_counter()
 
-        index_key = f"cs_rag:idx:{kb_version}"
+        index_key = f"{INDEX_PREFIX}{kb_version}"
         try:
             # Fetch all active keys for this KB version
             active_keys = self._client.smembers(index_key)
@@ -202,6 +250,17 @@ class CustomerSupportCache:
                 if not raw:
                     continue
                 entry = json.loads(raw)
+
+                # Filter candidate by requesting model
+                if model and entry.get("model") and entry.get("model") != model:
+                    continue
+
+                # Guard: Reject matches differing in numbers, country/regions, or negation
+                cached_query = entry.get("query", "")
+                if query_text and cached_query:
+                    if self._is_semantically_incompatible(query_text, cached_query):
+                        continue
+
                 cached_vec = entry.get("query_embedding")
                 if not cached_vec:
                     continue
@@ -282,12 +341,12 @@ class CustomerSupportCache:
                 self._client.set(key, serialized)
 
             # Register key in KB semantic index
-            index_key = f"cs_rag:idx:{kb_version}"
+            index_key = f"{INDEX_PREFIX}{kb_version}"
             self._client.sadd(index_key, key)
 
             # Register key under each cited document ID for policy-aware invalidation
             for doc_id in source_doc_ids:
-                doc_idx = f"cs_rag:doc:{doc_id}"
+                doc_idx = f"{DOC_PREFIX}{doc_id}"
                 self._client.sadd(doc_idx, key)
 
             return True
@@ -306,7 +365,7 @@ class CustomerSupportCache:
         if not self.is_available:
             return 0
 
-        doc_idx = f"cs_rag:doc:{doc_id}"
+        doc_idx = f"{DOC_PREFIX}{doc_id}"
         count = 0
         try:
             keys_to_purge = self._client.smembers(doc_idx)
@@ -357,7 +416,7 @@ class CustomerSupportCache:
                 total_keys = self._client.dbsize()
             except Exception:
                 try:
-                    total_keys = len(self._client.keys("cs_rag:ans:*"))
+                    total_keys = len(self._client.keys(f"{KEY_PREFIX}*"))
                 except Exception:
                     total_keys = 0
 

@@ -63,6 +63,8 @@ async def health_check():
         "total_chunks": len(pipeline.kb_manager.chunks),
         "redis_connected": pipeline.cache.is_available,
         "is_emulator": pipeline.cache._is_emulator,
+        "eviction_policy": pipeline.cache.eviction_policy,
+        "semantic_caching": pipeline.cache.semantic_caching_enabled,
         "llm_model": pipeline.generator.model,
     }
 
@@ -130,18 +132,30 @@ async def clear_cache():
 @app.post("/api/kb/update-policy")
 async def update_sample_policy(request: UpdatePolicyRequest):
     """
-    Demonstrates Section 8 Cache Invalidation:
-    Updates a sample policy chunk and re-computes the knowledge-base version hash.
-    Past cached answers are immediately bypassed without returning stale data.
+    Demonstrates Policy-Aware Cache Invalidation:
+    Updates a policy chunk, re-computes the KB version hash, and selectively
+    purges cached answers that cite the affected document.
     """
     try:
+        # Determine doc_id for selective policy invalidation
+        chunk = next((c for c in pipeline.kb_manager.chunks if c.chunk_id == request.chunk_id), None)
+        doc_id = chunk.doc_id if chunk else ""
+
         new_version = pipeline.kb_manager.update_document_chunk(
             chunk_id=request.chunk_id,
             new_text=request.new_policy_text,
         )
         pipeline.reload_knowledge_base()
+
+        # Policy-aware invalidation of specific document
+        purged_count = 0
+        if doc_id:
+            purged_count = pipeline.cache.invalidate_by_doc_id(doc_id)
+
         return {
             "message": f"Successfully updated chunk '{request.chunk_id}'.",
+            "doc_id": doc_id,
+            "purged_entries": purged_count,
             "old_version": pipeline.kb_manager.version_hash,
             "new_version_hash": new_version,
         }

@@ -139,11 +139,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) return;
       const data = await res.json();
       if (redisMode) {
+        const eviction = data.eviction_policy || "allkeys-lfu";
         if (data.is_emulator) {
-          redisMode.textContent = "In-Memory (fakeredis)";
+          redisMode.textContent = `In-Memory (${eviction})`;
           redisMode.style.color = "#38BDF8";
         } else {
-          redisMode.textContent = "Redis 6379 (Active)";
+          redisMode.textContent = `Redis 6379 (${eviction})`;
           redisMode.style.color = "#34D399";
         }
       }
@@ -231,9 +232,17 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }
 
-    const badgeHtml = isHit
-      ? `<span class="cache-pill-hit">⚡ Cache Hit · ${latency.toFixed(1)}ms · Redis (LLM Skipped)</span>`
-      : `<span class="cache-pill-miss">🔍 Cache Miss · ${latency.toFixed(1)}ms · Hybrid Search + Cross-Encoder</span>`;
+    let badgeHtml = "";
+    if (isHit) {
+      if (data.cache_type === "semantic") {
+        const simPct = Math.round((data.similarity_score || 0.9) * 100);
+        badgeHtml = `<span class="cache-pill-hit" style="background:rgba(147,51,234,0.18); border-color:rgba(168,85,247,0.4); color:#C084FC;">🎯 Semantic Cache Hit · ${latency.toFixed(1)}ms · Equivalence (${simPct}%)</span>`;
+      } else {
+        badgeHtml = `<span class="cache-pill-hit">⚡ Exact Cache Hit · ${latency.toFixed(1)}ms · Redis (LLM Skipped)</span>`;
+      }
+    } else {
+      badgeHtml = `<span class="cache-pill-miss">🔍 Cache Miss · ${latency.toFixed(1)}ms · Hybrid + Cross-Encoder</span>`;
+    }
 
     // Process answer text (convert newlines to <br> and bold markers)
     const formattedAnswer = escapeHtml(data.answer)

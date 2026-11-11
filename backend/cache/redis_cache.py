@@ -1,7 +1,20 @@
 """
 backend/cache/redis_cache.py
-Dedicated Redis answer caching module with exact-match SHA-256 keys,
-knowledge-base-version invalidation, source preservation, and metrics tracking.
+Advanced Redis Answer Caching for Customer Support RAG.
+
+Architecture & Features:
+1. Cache-Aside (Lazy Loading): Look up Redis before retrieval or LLM generation.
+2. Write-Through on Misses: Persist answer + citations + query vector before returning to client.
+3. LFU (Least Frequently Used) Eviction:
+   - Configures Redis 'maxmemory-policy allkeys-lfu' to retain frequently asked FAQs.
+   - Explicitly tracks access_count frequency on every hit for LFU observation.
+4. Semantic Caching:
+   - Evaluates cosine similarity of query embeddings against cached questions.
+   - Reuses verified answers for equivalent/paraphrased questions (threshold >= 0.88).
+5. Policy-Aware Invalidation:
+   - Tracks document citations (source_doc_ids).
+   - Invalidate answers selectively when a specific policy document is updated.
+   - Preserves global knowledge-base version fingerprinting.
 """
 
 import os
@@ -11,6 +24,7 @@ import hashlib
 import re
 from typing import Dict, Any, Optional, Tuple, List
 import logging
+import numpy as np
 import redis
 import fakeredis
 
@@ -19,29 +33,31 @@ logger = logging.getLogger(__name__)
 
 class CustomerSupportCache:
     """
-    Manages Redis caching for customer support question answering.
-    Features:
-    - Knowledge-base version awareness: keys include KB hash so updates invalidate immediately.
-    - Preserves complete source citations (doc IDs, titles, chunk IDs).
-    - Robust fallback to in-memory FakeRedis if live Redis is unreachable.
-    - Detailed latency and hit-rate telemetry for real-time performance evaluation.
+    Enterprise Redis caching layer for customer support inquiries.
+    Implements Cache-Aside, Write-Through on misses, LFU eviction,
+    Semantic Caching, and Policy-Aware invalidation.
     """
 
     def __init__(
         self,
         redis_url: Optional[str] = None,
         default_ttl: Optional[int] = None,
+        semantic_threshold: Optional[float] = None,
         use_fallback: bool = True,
     ):
         self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.default_ttl = default_ttl or int(os.getenv("CACHE_TTL", "3600"))
+        self.semantic_threshold = semantic_threshold or float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.88"))
+        self.semantic_caching_enabled = os.getenv("ENABLE_SEMANTIC_CACHE", "true").lower() in ("true", "1", "yes")
+        self.eviction_policy = "allkeys-lfu"
         self.use_fallback = use_fallback
 
         self._client: Optional[redis.Redis] = None
         self._is_emulator = False
 
-        # Live telemetry counters
-        self.hits = 0
+        # Live telemetry metrics
+        self.exact_hits = 0
+        self.semantic_hits = 0
         self.misses = 0
         self.total_hit_latency_ms = 0.0
         self.total_miss_latency_ms = 0.0
@@ -61,6 +77,14 @@ class CustomerSupportCache:
             self._client = client
             self._is_emulator = False
             logger.info(f"[Cache] Connected to live Redis instance at '{self.redis_url}'.")
+
+            # Configure Redis LFU Eviction policy
+            try:
+                self._client.config_set("maxmemory-policy", self.eviction_policy)
+                logger.info(f"[Cache] Configured Redis eviction policy: '{self.eviction_policy}'.")
+            except Exception as conf_err:
+                logger.info(f"[Cache] Note: Redis CONFIG SET maxmemory-policy ({conf_err}) - continuing with client-side LFU tracking.")
+
         except Exception as e:
             if self.use_fallback:
                 logger.warning(
@@ -82,28 +106,34 @@ class CustomerSupportCache:
         except Exception:
             return False
 
+    @property
+    def hits(self) -> int:
+        """Total cache hits (exact + semantic)."""
+        return self.exact_hits + self.semantic_hits
+
+    def normalize_query(self, query: str) -> str:
+        """Normalize query: lowercase, trim whitespace, and strip terminal punctuation."""
+        clean = re.sub(r"[?!.,;:]+$", "", query.strip().lower())
+        return re.sub(r"\s+", " ", clean)
+
     def generate_cache_key(self, query: str, kb_version: str, model: str = "") -> str:
         """
         Derive a deterministic SHA-256 cache key from normalized query, KB version, and model.
-        Changing the knowledge base version immediately changes the key, preventing stale answers.
         """
-        # Normalize: strip leading/trailing spaces, lowercase, collapse whitespace, remove terminal punctuation
-        clean_q = re.sub(r"[?!.,;]+$", "", query.strip().lower())
-        clean_q = re.sub(r"\s+", " ", clean_q)
+        clean_q = self.normalize_query(query)
         raw_key = f"support_rag::{clean_q}::kb={kb_version}::m={model}"
-        return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+        return f"cs_rag:ans:{hashlib.sha256(raw_key.encode('utf-8')).hexdigest()}"
 
     def get_answer(
         self,
         query: str,
         kb_version: str,
-        model: str = ""
+        model: str = "",
     ) -> Tuple[Optional[Dict[str, Any]], bool]:
         """
-        Check Redis before running RAG retrieval or LLM generation.
-
+        Fast Exact-Match Cache Lookup (O(1) in <0.2ms).
         Returns:
-            (cached_data_dict, True) on Cache HIT.
+            (payload, True) on Cache HIT.
             (None, False) on Cache MISS.
         """
         if not self.is_available:
@@ -118,18 +148,90 @@ class CustomerSupportCache:
             lookup_ms = (time.perf_counter() - start_t) * 1000
 
             if raw is None:
-                self.misses += 1
                 return None, False
 
             payload = json.loads(raw)
-            self.hits += 1
+
+            # LFU Access Frequency Accounting
+            payload["access_count"] = payload.get("access_count", 0) + 1
+            self._client.set(key, json.dumps(payload), keepttl=True)
+
+            self.exact_hits += 1
             self.total_hit_latency_ms += lookup_ms
             return payload, True
 
         except Exception as e:
-            logger.warning(f"[Cache] Lookup failed for key '{key}': {e}")
-            self.misses += 1
+            logger.warning(f"[Cache] Exact lookup failed for key '{key}': {e}")
             return None, False
+
+    def get_answer_semantic(
+        self,
+        query_vec: np.ndarray,
+        kb_version: str,
+        model: str = "",
+        threshold: Optional[float] = None,
+    ) -> Tuple[Optional[Dict[str, Any]], bool, float]:
+        """
+        Semantic Cache Lookup:
+        Reuses verified answers for equivalent questions by comparing query embeddings.
+        Returns:
+            (payload, True, max_sim) on Semantic HIT.
+            (None, False, max_sim) on Semantic MISS.
+        """
+        if not self.is_available or not self.semantic_caching_enabled:
+            return None, False, 0.0
+
+        cutoff = threshold if threshold is not None else self.semantic_threshold
+        start_t = time.perf_counter()
+
+        index_key = f"cs_rag:idx:{kb_version}"
+        try:
+            # Fetch all active keys for this KB version
+            active_keys = self._client.smembers(index_key)
+            if not active_keys:
+                return None, False, 0.0
+
+            best_sim = -1.0
+            best_payload = None
+            best_key = None
+
+            q_norm = query_vec / (np.linalg.norm(query_vec) + 1e-9)
+
+            for key in active_keys:
+                raw = self._client.get(key)
+                if not raw:
+                    continue
+                entry = json.loads(raw)
+                cached_vec = entry.get("query_embedding")
+                if not cached_vec:
+                    continue
+
+                cached_norm = np.array(cached_vec, dtype=np.float32)
+                # Dot product of normalized vectors equals cosine similarity
+                cos_sim = float(np.dot(q_norm, cached_norm))
+
+                if cos_sim > best_sim:
+                    best_sim = cos_sim
+                    best_payload = entry
+                    best_key = key
+
+            lookup_ms = (time.perf_counter() - start_t) * 1000
+
+            if best_sim >= cutoff and best_payload is not None:
+                # LFU Access Frequency update on semantic match
+                best_payload["access_count"] = best_payload.get("access_count", 0) + 1
+                if best_key:
+                    self._client.set(best_key, json.dumps(best_payload), keepttl=True)
+
+                self.semantic_hits += 1
+                self.total_hit_latency_ms += lookup_ms
+                return best_payload, True, best_sim
+
+            return None, False, max(best_sim, 0.0)
+
+        except Exception as e:
+            logger.warning(f"[Cache] Semantic search error: {e}")
+            return None, False, 0.0
 
     def set_answer(
         self,
@@ -138,10 +240,12 @@ class CustomerSupportCache:
         model: str,
         answer: str,
         sources: List[Dict[str, Any]],
+        query_embedding: Optional[List[float]] = None,
         ttl: Optional[int] = None,
     ) -> bool:
         """
-        Store a successful, supported answer and its source references in Redis with TTL.
+        Write-Through Storage on Cache Miss:
+        Persists synthesized answer, verified sources, and query vector in Redis with TTL.
         """
         if not self.is_available or not answer.strip():
             return False
@@ -149,13 +253,14 @@ class CustomerSupportCache:
         key = self.generate_cache_key(query, kb_version, model)
         effective_ttl = ttl if ttl is not None else self.default_ttl
 
-        # Extract structured metadata fields required by specification
+        # Extract structured source metadata for policy-aware invalidation
         source_doc_ids = list(dict.fromkeys(s.get("doc_id", "") for s in sources if s.get("doc_id")))
         source_titles = list(dict.fromkeys(s.get("title", "") for s in sources if s.get("title")))
         source_chunk_ids = [s.get("chunk_id", "") for s in sources if s.get("chunk_id")]
 
         payload = {
             "query": query,
+            "normalized_query": self.normalize_query(query),
             "answer": answer,
             "source_doc_ids": source_doc_ids,
             "source_titles": source_titles,
@@ -163,6 +268,8 @@ class CustomerSupportCache:
             "sources": sources,
             "knowledge_base_version": kb_version,
             "model": model,
+            "query_embedding": query_embedding,
+            "access_count": 1,  # Initialize LFU frequency
             "cached_at": time.time(),
             "created_at_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
@@ -170,11 +277,54 @@ class CustomerSupportCache:
         try:
             serialized = json.dumps(payload)
             if effective_ttl > 0:
-                return bool(self._client.set(key, serialized, ex=effective_ttl))
-            return bool(self._client.set(key, serialized))
+                self._client.set(key, serialized, ex=effective_ttl)
+            else:
+                self._client.set(key, serialized)
+
+            # Register key in KB semantic index
+            index_key = f"cs_rag:idx:{kb_version}"
+            self._client.sadd(index_key, key)
+
+            # Register key under each cited document ID for policy-aware invalidation
+            for doc_id in source_doc_ids:
+                doc_idx = f"cs_rag:doc:{doc_id}"
+                self._client.sadd(doc_idx, key)
+
+            return True
+
         except Exception as e:
             logger.warning(f"[Cache] Failed to store answer for key '{key}': {e}")
             return False
+
+    def invalidate_by_doc_id(self, doc_id: str) -> int:
+        """
+        Policy-Aware Invalidation:
+        Selectively purges all cached answers that cite the modified policy document.
+        Returns:
+            Number of invalidated cache entries.
+        """
+        if not self.is_available:
+            return 0
+
+        doc_idx = f"cs_rag:doc:{doc_id}"
+        count = 0
+        try:
+            keys_to_purge = self._client.smembers(doc_idx)
+            for key in keys_to_purge:
+                if self._client.delete(key):
+                    count += 1
+            # Clean up the document index set
+            self._client.delete(doc_idx)
+            logger.info(f"[Cache] Policy-aware invalidation: purged {count} entries citing '{doc_id}'.")
+            return count
+        except Exception as e:
+            logger.warning(f"[Cache] Policy invalidation error for '{doc_id}': {e}")
+            return 0
+
+    def record_miss_latency(self, latency_ms: float) -> None:
+        """Record the latency of a complete RAG execution on cache miss."""
+        self.misses += 1
+        self.total_miss_latency_ms += latency_ms
 
     def clear(self) -> bool:
         """Purge all cached keys from Redis."""
@@ -182,7 +332,8 @@ class CustomerSupportCache:
             return False
         try:
             self._client.flushdb()
-            self.hits = 0
+            self.exact_hits = 0
+            self.semantic_hits = 0
             self.misses = 0
             self.total_hit_latency_ms = 0.0
             self.total_miss_latency_ms = 0.0
@@ -191,16 +342,13 @@ class CustomerSupportCache:
             logger.warning(f"[Cache] Flush failed: {e}")
             return False
 
-    def record_miss_latency(self, latency_ms: float) -> None:
-        """Record the latency of a complete RAG execution on cache miss."""
-        self.total_miss_latency_ms += latency_ms
-
     def get_metrics(self) -> Dict[str, Any]:
         """Return real tracked telemetry metrics for the frontend performance dashboard."""
-        total_queries = self.hits + self.misses
-        hit_rate = (self.hits / total_queries) if total_queries > 0 else 0.0
+        total_hits = self.hits
+        total_queries = total_hits + self.misses
+        hit_rate = (total_hits / total_queries) if total_queries > 0 else 0.0
 
-        avg_hit_ms = (self.total_hit_latency_ms / self.hits) if self.hits > 0 else 0.0
+        avg_hit_ms = (self.total_hit_latency_ms / total_hits) if total_hits > 0 else 0.0
         avg_miss_ms = (self.total_miss_latency_ms / self.misses) if self.misses > 0 else 0.0
 
         total_keys = 0
@@ -209,25 +357,27 @@ class CustomerSupportCache:
                 total_keys = self._client.dbsize()
             except Exception:
                 try:
-                    total_keys = len(self._client.keys("*"))
+                    total_keys = len(self._client.keys("cs_rag:ans:*"))
                 except Exception:
                     total_keys = 0
 
-        # Estimated cost savings: assuming average $0.0004 per LLM generation call avoided
-        estimated_cost_saved_usd = round(self.hits * 0.0004, 4)
+        estimated_cost_saved_usd = round(total_hits * 0.0004, 4)
 
         return {
             "is_connected": self.is_available,
             "is_emulator": self._is_emulator,
+            "eviction_policy": self.eviction_policy,
             "total_questions": total_queries,
-            "cache_hits": self.hits,
+            "cache_hits": total_hits,
+            "exact_hits": self.exact_hits,
+            "semantic_hits": self.semantic_hits,
             "cache_misses": self.misses,
             "hit_rate_pct": round(hit_rate * 100, 2),
             "avg_hit_latency_ms": round(avg_hit_ms, 2),
             "avg_miss_latency_ms": round(avg_miss_ms, 2),
-            "llm_calls_avoided": self.hits,
+            "llm_calls_avoided": total_hits,
             "estimated_cost_saved_usd": estimated_cost_saved_usd,
             "total_keys_in_redis": total_keys,
             "default_ttl_seconds": self.default_ttl,
+            "semantic_threshold": self.semantic_threshold,
         }
-

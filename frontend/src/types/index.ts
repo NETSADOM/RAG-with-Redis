@@ -12,18 +12,25 @@ export interface SourceReference {
 export interface ChatResponse {
   answer: string;
   cache_hit: boolean;
+  cache_type?: string; // 'exact' | 'semantic' | 'none'
+  similarity_score?: number;
   latency_ms: number;
-  source_references: SourceReference[];
-  retrieval_method: string;
-  reranked: boolean;
-  kb_version: string;
+  sources: SourceReference[];
+  source_references?: SourceReference[];
+  retrieval_method?: string;
+  reranked?: boolean;
+  knowledge_base_version?: string;
+  kb_version?: string;
 }
 
 export interface CacheMetrics {
   is_connected: boolean;
   is_emulator: boolean;
+  eviction_policy?: string;
   total_questions: number;
   cache_hits: number;
+  exact_hits?: number;
+  semantic_hits?: number;
   cache_misses: number;
   hit_rate_pct: number;
   avg_hit_latency_ms: number;
@@ -54,6 +61,8 @@ export interface Message {
   content: string;
   timestamp: string;
   cacheHit?: boolean;
+  cacheType?: string;
+  similarityScore?: number;
   latencyMs?: number;
   sources?: SourceReference[];
 }

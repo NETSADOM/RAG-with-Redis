@@ -119,8 +119,10 @@ export default function Home() {
         content: data.answer,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         cacheHit: data.cache_hit,
+        cacheType: data.cache_type,
+        similarityScore: data.similarity_score,
         latencyMs: data.latency_ms,
-        sources: data.source_references,
+        sources: data.source_references || data.sources,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -326,7 +328,11 @@ export default function Home() {
           <div className="p-3 border-t border-white/10 text-[11px] text-slate-500 space-y-1">
             <div className="flex justify-between">
               <span>Pipeline:</span>
-              <span className="text-slate-400 font-semibold">BM25 + MiniLM + RRF + Cross-Encoder</span>
+              <span className="text-slate-400 font-semibold">BM25 + Dense + Cross-Encoder</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Eviction:</span>
+              <span className="text-emerald-400 font-semibold">allkeys-lfu (Popular FAQs)</span>
             </div>
             <div className="flex justify-between">
               <span>Cache:</span>
@@ -420,10 +426,17 @@ export default function Home() {
                   {msg.role === "assistant" && (
                     <div className="flex items-center justify-between mb-2 text-xs">
                       {msg.cacheHit ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-bold text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30">
-                          <Zap className="w-3 h-3" />
-                          Cache Hit · {msg.latencyMs?.toFixed(1)}ms · Redis (LLM Skipped)
-                        </span>
+                        msg.cacheType === "semantic" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-bold text-[11px] text-purple-300 bg-purple-500/15 border border-purple-500/30">
+                            <Zap className="w-3 h-3 text-purple-400" />
+                            🎯 Semantic Hit · {msg.latencyMs?.toFixed(1)}ms · Equivalence ({Math.round((msg.similarityScore || 0.9) * 100)}%)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-bold text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30">
+                            <Zap className="w-3 h-3" />
+                            ⚡ Exact Hit · {msg.latencyMs?.toFixed(1)}ms · Redis (LLM Skipped)
+                          </span>
+                        )
                       ) : (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-medium text-[11px] text-slate-400 bg-white/5 border border-white/10">
                           <Search className="w-3 h-3" />

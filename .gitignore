@@ -17,7 +17,14 @@ chroma_db/
 .pytest_cache/
 pytest-cache-files-*/
 
-# User documents (keep folder structure via .gitkeep)
+# Node.js & Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# User documents
 documents/*.pdf
 documents/*
 !documents/.gitkeep

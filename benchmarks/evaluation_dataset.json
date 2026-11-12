@@ -3,271 +3,867 @@
     "id": "EF-01",
     "category": "exact_fact",
     "question": "How many days do I have to return an item to NovaCart for a refund?",
-    "expected_doc_ids": ["doc_refunds_returns"],
-    "expected_chunk_ids": ["refunds_returns_c1"],
-    "expected_pages": [1],
-    "ground_truth": "Customers have a 30-day return policy for most physical items starting from the delivery date."
+    "expected_doc_ids": [
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "refunds_returns_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Customers have a 30-day return policy for most physical items starting from the delivery date.",
+    "required_facts": [
+      "\\b30[ -]days?\\b",
+      "deliver"
+    ],
+    "forbidden_claims": [
+      "\\b(?:all|any)\\s+(?:items|products)\\s+(?:can|may)\\s+be returned",
+      "return (?:window|period) (?:starts|begins).{0,25}(?:purchase|order placement)"
+    ],
+    "allowed_numbers": [
+      "30"
+    ]
   },
   {
     "id": "EF-02",
     "category": "exact_fact",
     "question": "What items are strictly non-returnable under your return policy?",
-    "expected_doc_ids": ["doc_refunds_returns"],
-    "expected_chunk_ids": ["refunds_returns_c1"],
-    "expected_pages": [1],
-    "ground_truth": "Opened personal hygiene goods, perishable food items, gift cards, and downloadable software licenses are strictly non-returnable unless defective."
+    "expected_doc_ids": [
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "refunds_returns_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Opened personal hygiene goods, perishable food items, gift cards, and downloadable software licenses are strictly non-returnable unless defective.",
+    "required_facts": [
+      "opened.{0,40}hygiene",
+      "perishable",
+      "gift cards?",
+      "(downloadable|software).{0,30}(software|licen[cs])",
+      "(unless|except|if).{0,35}defect"
+    ],
+    "forbidden_claims": [
+      "(?:gift cards|opened personal hygiene goods|downloadable software) (?:are|can be) (?:freely )?return(?:able|ed)(?! unless)"
+    ],
+    "allowed_numbers": [
+      "30"
+    ]
   },
   {
     "id": "EF-03",
     "category": "exact_fact",
     "question": "How much is deducted for a prepaid return shipping label if I return an item because I changed my mind?",
-    "expected_doc_ids": ["doc_refunds_returns"],
-    "expected_chunk_ids": ["refunds_returns_c2"],
-    "expected_pages": [1],
-    "ground_truth": "A flat deduction of $5.99 is taken from your refund total for customer preference or change of mind returns."
+    "expected_doc_ids": [
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "refunds_returns_c2"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "A flat deduction of $5.99 is taken from your refund total for customer preference or change of mind returns.",
+    "required_facts": [
+      "\\$?5\\.99",
+      "(deduct|refund)"
+    ],
+    "forbidden_claims": [
+      "(?:change.of.mind|preference) returns? (?:are|is|have) (?:always )?free"
+    ],
+    "allowed_numbers": [
+      "5.99",
+      "10",
+      "100"
+    ]
   },
   {
     "id": "EF-04",
     "category": "exact_fact",
     "question": "Do you charge a restocking fee on apparel or high-value electronics?",
-    "expected_doc_ids": ["doc_refunds_returns"],
-    "expected_chunk_ids": ["refunds_returns_c2"],
-    "expected_pages": [1],
-    "ground_truth": "NovaCart does not charge restocking fees on apparel, but high-value electronics opened and returned without defect are subject to a 10% open-box restocking fee."
+    "expected_doc_ids": [
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "refunds_returns_c2"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "NovaCart does not charge restocking fees on apparel, but high-value electronics opened and returned without defect are subject to a 10% open-box restocking fee.",
+    "required_facts": [
+      "(no|not|without).{0,35}restocking.{0,35}apparel|apparel.{0,35}(no|not|free)",
+      "\\b10\\s*%",
+      "electronic",
+      "(without|non[- ]?)\\s*defect|not defective"
+    ],
+    "forbidden_claims": [
+      "apparel (?:has|carries|incurs|is subject to) (?:a )?restocking fee"
+    ],
+    "allowed_numbers": [
+      "5.99",
+      "10",
+      "100"
+    ]
   },
   {
     "id": "EF-05",
     "category": "exact_fact",
     "question": "How long does warehouse inspection take once my returned package arrives?",
-    "expected_doc_ids": ["doc_refunds_returns"],
-    "expected_chunk_ids": ["refunds_returns_c3"],
-    "expected_pages": [2],
-    "ground_truth": "Inspection takes 2 to 3 business days once the returned package reaches the warehouse."
+    "expected_doc_ids": [
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "refunds_returns_c3"
+    ],
+    "expected_pages": [
+      2
+    ],
+    "ground_truth": "Inspection takes 2 to 3 business days once the returned package reaches the warehouse.",
+    "required_facts": [
+      "\\b2\\s*(?:to|-)\\s*3\\s+business days"
+    ],
+    "forbidden_claims": [
+      "inspection (?:is|occurs|happens) immediately"
+    ],
+    "allowed_numbers": [
+      "1",
+      "2",
+      "3",
+      "5",
+      "7",
+      "24"
+    ]
   },
   {
     "id": "EF-06",
     "category": "exact_fact",
     "question": "How many days does it take for a refund to show on a credit or debit card?",
-    "expected_doc_ids": ["doc_refunds_returns"],
-    "expected_chunk_ids": ["refunds_returns_c3"],
-    "expected_pages": [2],
-    "ground_truth": "Funds typically appear on credit or debit cards within 3 to 5 business days after refund initiation."
+    "expected_doc_ids": [
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "refunds_returns_c3"
+    ],
+    "expected_pages": [
+      2
+    ],
+    "ground_truth": "Funds typically appear on credit or debit cards within 3 to 5 business days after refund initiation.",
+    "required_facts": [
+      "\\b3\\s*(?:to|-)\\s*5\\s+business days",
+      "(after|once|following).{0,45}(initiat|approv|refund)"
+    ],
+    "forbidden_claims": [
+      "(?:card|debit|credit).{0,15}refunds? (?:arrive|appear|settle) immediately"
+    ],
+    "allowed_numbers": [
+      "1",
+      "2",
+      "3",
+      "5",
+      "7",
+      "24"
+    ]
   },
   {
     "id": "EF-07",
     "category": "exact_fact",
     "question": "What is the cost of standard shipping and what is the free shipping threshold?",
-    "expected_doc_ids": ["doc_shipping_delivery"],
-    "expected_chunk_ids": ["shipping_delivery_c1"],
-    "expected_pages": [1],
-    "ground_truth": "Standard Shipping costs $4.99 or is completely free on all orders totaling $50.00 or more before taxes."
+    "expected_doc_ids": [
+      "doc_shipping_delivery"
+    ],
+    "expected_chunk_ids": [
+      "shipping_delivery_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Standard Shipping costs $4.99 or is completely free on all orders totaling $50.00 or more before taxes.",
+    "required_facts": [
+      "\\$?4\\.99",
+      "\\$?50(?:\\.00)?",
+      "(before|pre[- ]?)\\s*tax"
+    ],
+    "forbidden_claims": [
+      "free (?:standard )?shipping (?:on|for) all orders(?:\\.|$)"
+    ],
+    "allowed_numbers": [
+      "00",
+      "1",
+      "2",
+      "3",
+      "4.99",
+      "5",
+      "9.99",
+      "19.99",
+      "50.00"
+    ]
   },
   {
     "id": "EF-08",
     "category": "exact_fact",
     "question": "What is the daily cutoff time for Overnight Priority delivery?",
-    "expected_doc_ids": ["doc_shipping_delivery"],
-    "expected_chunk_ids": ["shipping_delivery_c1"],
-    "expected_pages": [1],
-    "ground_truth": "Overnight Priority Delivery requires placing the order before 1:00 PM EST for next business day delivery."
+    "expected_doc_ids": [
+      "doc_shipping_delivery"
+    ],
+    "expected_chunk_ids": [
+      "shipping_delivery_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Overnight Priority Delivery requires placing the order before 1:00 PM EST for next business day delivery.",
+    "required_facts": [
+      "\\b1(?::00)?\\s*p\\.?m\\.?\\s+est\\b"
+    ],
+    "forbidden_claims": [
+      "\\b(?:pst|pdt|edt|cst|cest)\\b"
+    ],
+    "allowed_numbers": [
+      "00",
+      "1",
+      "2",
+      "3",
+      "4.99",
+      "5",
+      "9.99",
+      "19.99",
+      "50.00"
+    ]
   },
   {
     "id": "EF-09",
     "category": "exact_fact",
     "question": "Can Expedited or Overnight shipping deliver to a PO Box?",
-    "expected_doc_ids": ["doc_shipping_delivery"],
-    "expected_chunk_ids": ["shipping_delivery_c2"],
-    "expected_pages": [2],
-    "ground_truth": "No, Expedited and Overnight deliveries require a physical street address; only Standard shipping can deliver to PO Boxes via USPS."
+    "expected_doc_ids": [
+      "doc_shipping_delivery"
+    ],
+    "expected_chunk_ids": [
+      "shipping_delivery_c2"
+    ],
+    "expected_pages": [
+      2
+    ],
+    "ground_truth": "No, Expedited and Overnight deliveries require a physical street address; only Standard shipping can deliver to PO Boxes via USPS.",
+    "required_facts": [
+      "(physical|street) address",
+      "\\b(no|cannot|can.t|not|require)\\b"
+    ],
+    "forbidden_claims": [
+      "(?:expedited|overnight) shipping (?:can|does) deliver to (?:a )?po box"
+    ],
+    "allowed_numbers": [
+      "7",
+      "14",
+      "24"
+    ]
   },
   {
     "id": "EF-10",
     "category": "exact_fact",
     "question": "Which international countries does NovaCart currently ship to?",
-    "expected_doc_ids": ["doc_shipping_delivery"],
-    "expected_chunk_ids": ["shipping_delivery_c2"],
-    "expected_pages": [2],
-    "ground_truth": "NovaCart supports international delivery to Canada, the United Kingdom, and the European Union."
+    "expected_doc_ids": [
+      "doc_shipping_delivery"
+    ],
+    "expected_chunk_ids": [
+      "shipping_delivery_c2"
+    ],
+    "expected_pages": [
+      2
+    ],
+    "ground_truth": "NovaCart supports international delivery to Canada, the United Kingdom, and the European Union.",
+    "required_facts": [
+      "canada",
+      "united kingdom|\\buk\\b|\\bu\\.k\\.",
+      "european union|\\beu\\b"
+    ],
+    "forbidden_claims": [
+      "(?:ship|deliver)(?:s|y)? (?:to )?(?:everywhere|worldwide|all countries)"
+    ],
+    "allowed_numbers": [
+      "7",
+      "14",
+      "24"
+    ]
   },
   {
     "id": "EF-11",
     "category": "exact_fact",
     "question": "How long do I have to cancel an order after placing it on the website?",
-    "expected_doc_ids": ["doc_order_cancellation"],
-    "expected_chunk_ids": ["order_cancellation_c1"],
-    "expected_pages": [1],
-    "ground_truth": "Customers have a 30-minute self-service grace period immediately after order submission to cancel directly from their account dashboard."
+    "expected_doc_ids": [
+      "doc_order_cancellation"
+    ],
+    "expected_chunk_ids": [
+      "order_cancellation_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Customers have a 30-minute self-service grace period immediately after order submission to cancel directly from their account dashboard.",
+    "required_facts": [
+      "\\b30[ -]minutes?",
+      "(after|immediately|from).{0,45}(order|submi|plac)"
+    ],
+    "forbidden_claims": [
+      "(?:can|may) cancel (?:at )?any time"
+    ],
+    "allowed_numbers": [
+      "30"
+    ]
   },
   {
     "id": "EF-12",
     "category": "exact_fact",
     "question": "Can customer support change my delivery address after my order moves to processing?",
-    "expected_doc_ids": ["doc_order_cancellation"],
-    "expected_chunk_ids": ["order_cancellation_c2"],
-    "expected_pages": [1],
-    "ground_truth": "No, customer support cannot manually adjust shipping destinations once an order has progressed to Processing or Dispatched; changes must occur within the first 30 minutes."
+    "expected_doc_ids": [
+      "doc_order_cancellation"
+    ],
+    "expected_chunk_ids": [
+      "order_cancellation_c2"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "No, customer support cannot manually adjust shipping destinations once an order has progressed to Processing or Dispatched; changes must occur within the first 30 minutes.",
+    "required_facts": [
+      "cannot|can.t|\\bno\\b|not|unable",
+      "processing"
+    ],
+    "forbidden_claims": [
+      "(?:support|we) can (?:manually )?(?:change|adjust).{0,40}after.{0,20}processing"
+    ],
+    "allowed_numbers": [
+      "5.99",
+      "30"
+    ]
   },
   {
     "id": "EF-13",
     "category": "exact_fact",
     "question": "Within what timeframe must damaged or defective deliveries be reported?",
-    "expected_doc_ids": ["doc_damaged_missing"],
-    "expected_chunk_ids": ["damaged_missing_c1"],
-    "expected_pages": [1],
-    "ground_truth": "Damaged, shattered, or defective items must be reported within 48 hours of delivery confirmation."
+    "expected_doc_ids": [
+      "doc_damaged_missing"
+    ],
+    "expected_chunk_ids": [
+      "damaged_missing_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Damaged, shattered, or defective items must be reported within 48 hours of delivery confirmation.",
+    "required_facts": [
+      "\\b48\\s*hours?",
+      "deliver"
+    ],
+    "forbidden_claims": [
+      "(?:no|without a) (?:reporting )?(?:deadline|time limit)"
+    ],
+    "allowed_numbers": [
+      "48",
+      "100"
+    ]
   },
   {
     "id": "EF-14",
     "category": "exact_fact",
     "question": "What should I do if a carrier marks my parcel as delivered but it is not at my door?",
-    "expected_doc_ids": ["doc_damaged_missing"],
-    "expected_chunk_ids": ["damaged_missing_c2"],
-    "expected_pages": [1],
-    "ground_truth": "Wait 24 hours as carriers sometimes scan in advance, check with neighbors/reception, and submit a Lost Parcel Claim within 7 days."
+    "expected_doc_ids": [
+      "doc_damaged_missing"
+    ],
+    "expected_chunk_ids": [
+      "damaged_missing_c2"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Wait 24 hours as carriers sometimes scan in advance, check with neighbors/reception, and submit a Lost Parcel Claim within 7 days.",
+    "required_facts": [
+      "\\b24\\s*hours?",
+      "neighbor|reception",
+      "lost parcel claim",
+      "\\b7\\s*days?"
+    ],
+    "forbidden_claims": [
+      "(?:do not|don.t|no need to) (?:wait|check|submit|file)"
+    ],
+    "allowed_numbers": [
+      "7",
+      "24",
+      "48"
+    ]
   },
   {
     "id": "EF-15",
     "category": "exact_fact",
     "question": "What Buy Now Pay Later services are accepted and for what order totals?",
-    "expected_doc_ids": ["doc_payments_billing"],
-    "expected_chunk_ids": ["payments_billing_c1"],
-    "expected_pages": [1],
-    "ground_truth": "Klarna and Afterpay are accepted for orders between $35.00 and $1,500.00."
+    "expected_doc_ids": [
+      "doc_payments_billing"
+    ],
+    "expected_chunk_ids": [
+      "payments_billing_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Klarna and Afterpay are accepted for orders between $35.00 and $1,500.00.",
+    "required_facts": [
+      "klarna",
+      "afterpay",
+      "\\$?35(?:\\.00)?",
+      "\\$?1,?500(?:\\.00)?"
+    ],
+    "forbidden_claims": [
+      "(?:no|without) (?:order )?(?:minimum|maximum|limit)"
+    ],
+    "allowed_numbers": [
+      "35.00",
+      "1500.00"
+    ]
   },
   {
     "id": "EF-16",
     "category": "exact_fact",
     "question": "How long is a password reset verification code valid?",
-    "expected_doc_ids": ["doc_account_security"],
-    "expected_chunk_ids": ["account_security_c1"],
-    "expected_pages": [1],
-    "ground_truth": "The 6-digit password reset verification code sent to your email expires in 15 minutes."
+    "expected_doc_ids": [
+      "doc_account_security"
+    ],
+    "expected_chunk_ids": [
+      "account_security_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "The 6-digit password reset verification code sent to your email expires in 15 minutes.",
+    "required_facts": [
+      "\\b15\\s*minutes?"
+    ],
+    "forbidden_claims": [
+      "(?:never|does not|doesn.t) expire"
+    ],
+    "allowed_numbers": [
+      "1",
+      "2",
+      "6",
+      "15"
+    ]
   },
   {
     "id": "EF-17",
     "category": "exact_fact",
     "question": "What products are covered by the 1-Year Limited Hardware Warranty?",
-    "expected_doc_ids": ["doc_warranty_support"],
-    "expected_chunk_ids": ["warranty_support_c1"],
-    "expected_pages": [1],
-    "ground_truth": "All NovaCart branded consumer electronics, audio gear, and smart home hardware include a 1-Year Limited Manufacturer Warranty."
+    "expected_doc_ids": [
+      "doc_warranty_support"
+    ],
+    "expected_chunk_ids": [
+      "warranty_support_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "All NovaCart branded consumer electronics, audio gear, and smart home hardware include a 1-Year Limited Manufacturer Warranty.",
+    "required_facts": [
+      "novacart.{0,25}brand|brand.{0,25}novacart",
+      "electronic",
+      "audio",
+      "smart home",
+      "\\b1[ -]year"
+    ],
+    "forbidden_claims": [
+      "all (?:products|items) (?:include|have|carry).{0,20}warranty"
+    ],
+    "allowed_numbers": [
+      "1"
+    ]
   },
   {
     "id": "EF-18",
     "category": "exact_fact",
     "question": "Does the hardware warranty cover accidental drops, screen cracks, or water spills?",
-    "expected_doc_ids": ["doc_warranty_support"],
-    "expected_chunk_ids": ["warranty_support_c1"],
-    "expected_pages": [1],
-    "ground_truth": "No, the warranty does not cover accidental damage, liquid spills, cracked screens, cosmetic wear, or unauthorized repairs."
+    "expected_doc_ids": [
+      "doc_warranty_support"
+    ],
+    "expected_chunk_ids": [
+      "warranty_support_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "No, the warranty does not cover accidental damage, liquid spills, cracked screens, cosmetic wear, or unauthorized repairs.",
+    "required_facts": [
+      "(not|no|exclude|isn.t|aren.t).{0,35}(cover|accident|damage)|not covered",
+      "accident",
+      "liquid|water|spill",
+      "crack"
+    ],
+    "forbidden_claims": [
+      "(?:warranty|it) (?:covers|includes) (?:accidental damage|liquid spills|cracked screens)"
+    ],
+    "allowed_numbers": [
+      "1"
+    ]
   },
   {
     "id": "CD-19",
     "category": "cross_document",
     "question": "If my order arrives damaged and I prefer a complete refund instead of a replacement, will I get my original shipping fee refunded too?",
-    "expected_doc_ids": ["doc_damaged_missing", "doc_refunds_returns"],
-    "expected_chunk_ids": ["damaged_missing_c1", "refunds_returns_c2"],
-    "expected_pages": [1],
-    "ground_truth": "Yes, if an item arrives damaged and you report it within 48 hours, NovaCart issues a 100% full refund including all original shipping fees and free return shipping."
+    "expected_doc_ids": [
+      "doc_damaged_missing"
+    ],
+    "expected_chunk_ids": [
+      "damaged_missing_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Yes, if an item arrives damaged and you report it within 48 hours, NovaCart issues a 100% full refund including all original shipping fees and free return shipping.",
+    "required_facts": [
+      "\\b48\\s*hours?",
+      "(full|100\\s*%).{0,20}refund",
+      "original shipping"
+    ],
+    "forbidden_claims": [
+      "original shipping (?:fees|costs) (?:are not|aren.t|cannot be) refund"
+    ],
+    "allowed_numbers": [
+      "5.99",
+      "10",
+      "48",
+      "100"
+    ]
   },
   {
     "id": "CD-20",
     "category": "cross_document",
     "question": "If I cancel my order within the 30-minute self-service grace period, how does the refund work for card payments?",
-    "expected_doc_ids": ["doc_order_cancellation", "doc_refunds_returns"],
-    "expected_chunk_ids": ["order_cancellation_c1", "refunds_returns_c3"],
-    "expected_pages": [1, 2],
-    "ground_truth": "Cancelling within the 30-minute window issues a full refund to your original payment method immediately without fees, appearing on credit/debit cards in 3 to 5 business days."
+    "expected_doc_ids": [
+      "doc_order_cancellation"
+    ],
+    "expected_chunk_ids": [
+      "order_cancellation_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Within the 30-minute cancellation window, a full refund is immediately credited to the original payment method without processing deductions. The cancellation policy does not specify a separate card settlement timeline.",
+    "required_facts": [
+      "(full|100\\s*%).{0,20}refund",
+      "immediate",
+      "original.{0,20}(payment|method)",
+      "(without|no).{0,25}(fee|deduct)"
+    ],
+    "forbidden_claims": [
+      "\\b3\\s*(?:to|[-?])\\s*5\\s+business days",
+      "\\b3\\s*(?:to|-)\\s*5\\s+business days"
+    ],
+    "allowed_numbers": [
+      "30"
+    ]
   },
   {
     "id": "CD-21",
     "category": "cross_document",
     "question": "Can I return a smart home device under warranty after 45 days if the internal battery fails?",
-    "expected_doc_ids": ["doc_warranty_support", "doc_refunds_returns"],
-    "expected_chunk_ids": ["warranty_support_c1", "refunds_returns_c1"],
-    "expected_pages": [1],
-    "ground_truth": "While the standard return window is 30 days, hardware failures and battery defects are covered under the 1-Year Limited Warranty, qualifying for a free replacement."
+    "expected_doc_ids": [
+      "doc_warranty_support"
+    ],
+    "expected_chunk_ids": [
+      "warranty_support_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "While the standard return window is 30 days, hardware failures and battery defects are covered under the 1-Year Limited Warranty, qualifying for a free replacement.",
+    "required_facts": [
+      "\\b1[ -]year",
+      "battery",
+      "(free|no.cost).{0,25}replacement"
+    ],
+    "forbidden_claims": [
+      "battery defects (?:are not|aren.t) covered"
+    ],
+    "allowed_numbers": [
+      "1",
+      "30"
+    ]
   },
   {
     "id": "CD-22",
     "category": "cross_document",
     "question": "If my order has already shipped and cannot be cancelled, can I return it upon delivery without paying return shipping?",
-    "expected_doc_ids": ["doc_order_cancellation", "doc_refunds_returns"],
-    "expected_chunk_ids": ["order_cancellation_c2", "refunds_returns_c2"],
-    "expected_pages": [1],
-    "ground_truth": "If an order has shipped, you can refuse the parcel at delivery or generate a return label. If returned due to personal preference, a $5.99 deduction applies unless due to fulfillment error."
+    "expected_doc_ids": [
+      "doc_order_cancellation",
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "order_cancellation_c2",
+      "refunds_returns_c2"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "After delivery, initiate a return. A $5.99 deduction applies for personal preference or accidental ordering. Return shipping is free only for fulfillment error, damage, or a verified manufacturer defect.",
+    "required_facts": [
+      "\\$?5\\.99",
+      "(preference|change.of.mind|accidental)",
+      "free.{0,100}(error|damag|defect)|(error|damag|defect).{0,100}free"
+    ],
+    "forbidden_claims": [
+      "(?:always|unconditionally)\\s+free",
+      "free prepaid return label",
+      "(?:always|unconditionally) free|free prepaid return label"
+    ],
+    "allowed_numbers": [
+      "5.99",
+      "10",
+      "30",
+      "100"
+    ],
+    "expected_evidence_groups": [
+      [
+        "order_cancellation_c2",
+        "refunds_returns_c2"
+      ]
+    ]
   },
   {
     "id": "CD-23",
     "category": "cross_document",
-    "question": "If I paid for an order with Klarna and return the item within 30 days, what happens to my remaining installments?",
-    "expected_doc_ids": ["doc_refunds_returns", "doc_payments_billing"],
-    "expected_chunk_ids": ["refunds_returns_c3", "payments_billing_c1"],
-    "expected_pages": [1, 2],
-    "ground_truth": "Future Klarna installments are automatically cancelled and any already-paid installments are reimbursed to your card within 5 to 7 business days."
+    "question": "If I paid for an order with Klarna and return the item, what happens to my remaining and already-paid installments, and how long does reimbursement take?",
+    "expected_doc_ids": [
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "refunds_returns_c3"
+    ],
+    "expected_pages": [
+      2
+    ],
+    "ground_truth": "Future Klarna installments are automatically cancelled and any already-paid installments are reimbursed to your card within 5 to 7 business days.",
+    "required_facts": [
+      "(future|remaining).{0,45}cancel",
+      "\\b5\\s*(?:to|-)\\s*7\\s+business days",
+      "(reimburs|refund).{0,35}card|card.{0,35}(reimburs|refund)"
+    ],
+    "forbidden_claims": [
+      "(?:must|need to) (?:continue|keep) paying.{0,25}installment"
+    ],
+    "allowed_numbers": [
+      "1",
+      "2",
+      "3",
+      "5",
+      "7",
+      "24",
+      "35.00",
+      "1500.00"
+    ]
   },
   {
     "id": "CD-24",
     "category": "cross_document",
     "question": "Can I use PayPal to place an Expedited 2-day order to an APO military address?",
-    "expected_doc_ids": ["doc_shipping_delivery", "doc_payments_billing"],
-    "expected_chunk_ids": ["shipping_delivery_c2", "payments_billing_c1"],
-    "expected_pages": [1, 2],
-    "ground_truth": "While PayPal is accepted, Expedited shipping requires a physical street address and cannot deliver to APO/FPO military addresses (only Standard shipping supports APO via USPS)."
+    "expected_doc_ids": [
+      "doc_shipping_delivery",
+      "doc_payments_billing"
+    ],
+    "expected_chunk_ids": [
+      "shipping_delivery_c2",
+      "payments_billing_c1"
+    ],
+    "expected_pages": [
+      1,
+      2
+    ],
+    "ground_truth": "While PayPal is accepted, Expedited shipping requires a physical street address and cannot deliver to APO/FPO military addresses (only Standard shipping supports APO via USPS).",
+    "required_facts": [
+      "paypal.{0,35}accept|accept.{0,35}paypal",
+      "expedited",
+      "physical street address|physical address|cannot deliver|can.t deliver",
+      "standard",
+      "apo|military"
+    ],
+    "forbidden_claims": [
+      "expedited shipping (?:can|does) deliver.{0,25}(?:apo|military)"
+    ],
+    "allowed_numbers": [
+      "7",
+      "14",
+      "24",
+      "35.00",
+      "1500.00"
+    ]
   },
   {
     "id": "CD-25",
     "category": "cross_document",
-    "question": "If an item in an Overnight Priority delivery arrives broken, do I have to pay to return it?",
-    "expected_doc_ids": ["doc_damaged_missing", "doc_refunds_returns", "doc_shipping_delivery"],
-    "expected_chunk_ids": ["damaged_missing_c1", "refunds_returns_c2"],
-    "expected_pages": [1],
-    "ground_truth": "No, return shipping is 100% free if the item is damaged, and you are not required to return hazardous broken goods unless requested for inspection."
+    "question": "If an Overnight Priority delivery arrives shattered and hazardous, must I return the broken goods, and must I pay return shipping?",
+    "expected_doc_ids": [
+      "doc_damaged_missing",
+      "doc_refunds_returns",
+      "doc_shipping_delivery"
+    ],
+    "expected_chunk_ids": [
+      "damaged_missing_c1",
+      "refunds_returns_c2"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "No, return shipping is 100% free if the item is damaged, and you are not required to return hazardous broken goods unless requested for inspection.",
+    "required_facts": [
+      "free|no.{0,25}(pay|cost|charge)",
+      "hazardous|shattered",
+      "(unless|except).{0,45}(request|inspect)"
+    ],
+    "forbidden_claims": [
+      "(?:must|need to) (?:pay|return hazardous)"
+    ],
+    "allowed_numbers": [
+      "5.99",
+      "10",
+      "48",
+      "100"
+    ]
   },
   {
     "id": "CD-26",
     "category": "cross_document",
     "question": "If I request complete account deletion under GDPR, what happens to my past order receipts and unredeemed rewards?",
-    "expected_doc_ids": ["doc_account_security"],
-    "expected_chunk_ids": ["account_security_c2"],
-    "expected_pages": [1],
-    "ground_truth": "Account deletion permanently and irreversibly deletes order history, saved addresses, and unredeemed loyalty reward points."
+    "expected_doc_ids": [
+      "doc_account_security"
+    ],
+    "expected_chunk_ids": [
+      "account_security_c2"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Account deletion permanently and irreversibly deletes order history, saved addresses, and unredeemed loyalty reward points.",
+    "required_facts": [
+      "permanent|irreversib|cannot be undone",
+      "order history",
+      "unredeemed.{0,25}(reward|point)"
+    ],
+    "forbidden_claims": [
+      "(?:can|may) (?:restore|recover|undo).{0,30}(?:deletion|deleted|history|points)"
+    ],
+    "allowed_numbers": []
   },
   {
     "id": "CD-27",
     "category": "cross_document",
     "question": "If an item marked delivered cannot be found after 24 hours and a claim is filed, how long does NovaCart take to trace it before offering a replacement?",
-    "expected_doc_ids": ["doc_damaged_missing"],
-    "expected_chunk_ids": ["damaged_missing_c2"],
-    "expected_pages": [1],
-    "ground_truth": "NovaCart initiates a carrier trace; if the parcel remains unresolved within 48 hours, they resend the order via priority courier or issue a complete refund."
+    "expected_doc_ids": [
+      "doc_damaged_missing"
+    ],
+    "expected_chunk_ids": [
+      "damaged_missing_c2"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "NovaCart initiates a carrier trace; if the parcel remains unresolved within 48 hours, they resend the order via priority courier or issue a complete refund.",
+    "required_facts": [
+      "\\b48\\s*hours?",
+      "priority|replacement|resend"
+    ],
+    "forbidden_claims": [
+      "(?:never|will not|won.t) (?:refund|replace|resend)"
+    ],
+    "allowed_numbers": [
+      "7",
+      "24",
+      "48"
+    ]
   },
   {
     "id": "CD-28",
     "category": "cross_document",
     "question": "Can I combine a NovaCart gift card with a credit card to purchase an electronics item covered by the 1-year warranty?",
-    "expected_doc_ids": ["doc_payments_billing", "doc_warranty_support"],
-    "expected_chunk_ids": ["payments_billing_c1", "warranty_support_c1"],
-    "expected_pages": [1],
-    "ground_truth": "Yes, NovaCart gift cards can be combined with credit cards to cover balances, and branded electronics hardware includes the 1-Year Limited Manufacturer Warranty."
+    "expected_doc_ids": [
+      "doc_payments_billing",
+      "doc_warranty_support"
+    ],
+    "expected_chunk_ids": [
+      "payments_billing_c1",
+      "warranty_support_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Yes, NovaCart gift cards can be combined with credit cards to cover balances, and branded electronics hardware includes the 1-Year Limited Manufacturer Warranty.",
+    "required_facts": [
+      "gift card",
+      "credit card",
+      "combin",
+      "\\b1[ -]year",
+      "brand|novacart.{0,30}electronic"
+    ],
+    "forbidden_claims": [
+      "(?:cannot|can.t) (?:be )?combin"
+    ],
+    "allowed_numbers": [
+      "1",
+      "35.00",
+      "1500.00"
+    ]
   },
   {
     "id": "CD-29",
     "category": "cross_document",
-    "question": "If I purchased as a guest and want to link my past orders to an account before returning an item, how can I do that?",
-    "expected_doc_ids": ["doc_account_security", "doc_refunds_returns"],
-    "expected_chunk_ids": ["account_security_c2", "refunds_returns_c1"],
-    "expected_pages": [1],
-    "ground_truth": "You can link past guest purchases by creating an account with the exact same email address used during guest checkout, then initiate returns in the portal."
+    "question": "If I purchased as a guest, how can I link past orders to an account and what return window and item condition apply?",
+    "expected_doc_ids": [
+      "doc_account_security",
+      "doc_refunds_returns"
+    ],
+    "expected_chunk_ids": [
+      "account_security_c2",
+      "refunds_returns_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "Use the same email address as guest checkout to link past orders. Most physical items have a 30-day return window from delivery and must be unused in original condition, with tags and original packaging; exclusions apply.",
+    "required_facts": [
+      "(same|match|identical|exact).{0,40}email|email.{0,40}(same|match|identical)",
+      "\\b30[ -]days?",
+      "unused|original condition"
+    ],
+    "forbidden_claims": [
+      "(?:different|any) email address"
+    ],
+    "allowed_numbers": [
+      "30"
+    ]
   },
   {
     "id": "CD-30",
     "category": "cross_document",
     "question": "What documentation or proof do I need to submit a warranty replacement claim for defective audio headphones?",
-    "expected_doc_ids": ["doc_warranty_support"],
-    "expected_chunk_ids": ["warranty_support_c1"],
-    "expected_pages": [1],
-    "ground_truth": "You need to provide your original order number and a brief video exhibiting the malfunction."
+    "expected_doc_ids": [
+      "doc_warranty_support"
+    ],
+    "expected_chunk_ids": [
+      "warranty_support_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "You need to provide your original order number and a brief video exhibiting the malfunction.",
+    "required_facts": [
+      "original order number",
+      "video",
+      "malfunction|defect|fault|problem"
+    ],
+    "forbidden_claims": [
+      "(?:no|without) (?:proof|video|order number)"
+    ],
+    "allowed_numbers": [
+      "1"
+    ]
   },
   {
     "id": "UN-31",
@@ -276,7 +872,8 @@
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our NovaCart policies do not contain sufficient information regarding in-store retail pickup."
+    "ground_truth": "I'm sorry, but our NovaCart policies do not contain sufficient information regarding in-store retail pickup.",
+    "required_facts": []
   },
   {
     "id": "UN-32",
@@ -285,16 +882,35 @@
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our NovaCart policies do not contain information regarding airline flight booking."
+    "ground_truth": "I'm sorry, but our NovaCart policies do not contain information regarding airline flight booking.",
+    "required_facts": []
   },
   {
     "id": "UN-33",
-    "category": "unsupported",
+    "category": "exact_fact",
     "question": "Do you accept Bitcoin, Ethereum, or Dogecoin cryptocurrency at checkout?",
-    "expected_doc_ids": [],
-    "expected_chunk_ids": [],
-    "expected_pages": [],
-    "ground_truth": "NovaCart does not accept cryptocurrencies."
+    "expected_doc_ids": [
+      "doc_payments_billing"
+    ],
+    "expected_chunk_ids": [
+      "payments_billing_c1"
+    ],
+    "expected_pages": [
+      1
+    ],
+    "ground_truth": "NovaCart does not accept cryptocurrencies.",
+    "required_facts": [
+      "(not|no|cannot|can.t|doesn.t).{0,35}(accept|support)|not accepted",
+      "cryptocurrenc|bitcoin"
+    ],
+    "forbidden_claims": [
+      "\\b(?:we|novacart)\\s+accept(?:s)?\\s+(?:bitcoin|ethereum|dogecoin|cryptocurrenc)",
+      "\\b(?:we|novacart) accept(?:s)? (?:bitcoin|ethereum|dogecoin|cryptocurrenc)"
+    ],
+    "allowed_numbers": [
+      "35.00",
+      "1500.00"
+    ]
   },
   {
     "id": "UN-34",
@@ -303,16 +919,18 @@
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our NovaCart documentation does not contain information regarding live animals or pets."
+    "ground_truth": "I'm sorry, but our NovaCart documentation does not contain information regarding live animals or pets.",
+    "required_facts": []
   },
   {
     "id": "UN-35",
     "category": "unsupported",
-    "question": "Do you ship packages to Antarctica or research stations at the South Pole?",
+    "question": "How many days would a shipment to a research station at the South Pole take?",
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our shipping policies do not contain information supporting delivery to Antarctica."
+    "ground_truth": "I'm sorry, but our shipping policies do not contain information supporting delivery to Antarctica.",
+    "required_facts": []
   },
   {
     "id": "UN-36",
@@ -321,7 +939,8 @@
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our documentation does not contain information regarding plumbing or appliance installation services."
+    "ground_truth": "I'm sorry, but our documentation does not contain information regarding plumbing or appliance installation services.",
+    "required_facts": []
   },
   {
     "id": "UN-37",
@@ -330,7 +949,8 @@
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our NovaCart policies do not offer or document residential mortgage loans."
+    "ground_truth": "I'm sorry, but our NovaCart policies do not offer or document residential mortgage loans.",
+    "required_facts": []
   },
   {
     "id": "UN-38",
@@ -339,7 +959,8 @@
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our policies do not contain information regarding prescription drugs or health insurance."
+    "ground_truth": "I'm sorry, but our policies do not contain information regarding prescription drugs or health insurance.",
+    "required_facts": []
   },
   {
     "id": "UN-39",
@@ -348,7 +969,8 @@
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our policies do not contain information regarding car rental services."
+    "ground_truth": "I'm sorry, but our policies do not contain information regarding car rental services.",
+    "required_facts": []
   },
   {
     "id": "UN-40",
@@ -357,7 +979,7 @@
     "expected_doc_ids": [],
     "expected_chunk_ids": [],
     "expected_pages": [],
-    "ground_truth": "I'm sorry, but our documentation does not contain information regarding prescription eyewear or lenses."
+    "ground_truth": "I'm sorry, but our documentation does not contain information regarding prescription eyewear or lenses.",
+    "required_facts": []
   }
 ]
-

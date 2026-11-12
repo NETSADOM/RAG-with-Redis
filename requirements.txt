@@ -1,19 +1,14 @@
-# Core Framework & Web API
-fastapi>=0.110.0
-uvicorn>=0.28.0
-python-multipart>=0.0.9
-pydantic>=2.0.0
-python-dotenv>=1.0.0
-requests>=2.31.0
+# Application
+fastapi==0.162.4
+uvicorn==0.54.0
+pydantic==2.14.3
+python-dotenv==1.2.4
+sentence-transformers==6.2.0
+torch==2.15.0
+numpy==2.5.4
+redis==8.1.0
 
-# Retrieval & NLP
-sentence-transformers>=3.0.0
-torch>=2.0.0
-numpy>=1.24.0
-
-# Redis Answer Caching
-redis>=5.0.0
-fakeredis>=2.20.0
-
-# Testing
-pytest>=8.0.0
+# Tests
+pytest==9.2.0
+fakeredis==2.40.0
+httpx==0.28.1

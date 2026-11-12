@@ -1,18 +1,28 @@
-"""
-backend/rag/retrieval.py
-Implements:
-1. BM25 Sparse Keyword Retrieval
-2. Sentence Transformers Dense Semantic Retrieval
-3. Reciprocal Rank Fusion (RRF) Hybrid Merger
-"""
+"""Keyword and semantic policy retrieval with reciprocal rank fusion."""
 
+import os
 import math
 import re
 import json
 import hashlib
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
 import numpy as np
+
+FILTER_FIELDS = {"doc_id", "section", "doc_version", "page_number"}
+SEARCH_EXECUTOR = ThreadPoolExecutor(max_workers=4, thread_name_prefix="policy-search")
+
+
+def filter_results(results, metadata_filters=None):
+    """Apply explicit, exact metadata constraints without guessing from the question."""
+    filters = metadata_filters or {}
+    if filters.keys() - FILTER_FIELDS:
+        raise ValueError("Unsupported metadata filter.")
+    return [(chunk, score) for chunk, score in results
+            if all(getattr(chunk, name) == value for name, value in filters.items())]
 
 
 class KBChunk:
@@ -55,13 +65,7 @@ class KBChunk:
 
 
 class KnowledgeBaseManager:
-    """
-    Loads, parses, and versions customer support documentation.
-    Features:
-    - O(1) Precomputed Document Revisions: Persists document-level hashes during ingestion
-      and modification. Eliminates full collection disk scans or chunk iterations on queries.
-    - Clickable Page Linking: Maps every chunk to its physical PDF page and source URL.
-    """
+    'Loads, parses, and versions customer support documentation.'
 
     def __init__(self, kb_path: Optional[Path | str] = None):
         if kb_path is None:
@@ -81,10 +85,6 @@ class KnowledgeBaseManager:
         """
         return self.collection_revision
 
-    def get_doc_revision(self, doc_id: str) -> str:
-        """Return the persisted revision hash for a specific document in O(1)."""
-        return self.doc_revisions.get(doc_id, "")
-
     def load(self) -> None:
         """
         Load documentation from JSON, parse chunks, and persist document revisions in memory.
@@ -96,6 +96,10 @@ class KnowledgeBaseManager:
         raw_content = self.kb_path.read_text(encoding="utf-8")
         data = json.loads(raw_content)
 
+        self.load_data(data)
+
+    def load_data(self, data: Dict[str, Any]) -> None:
+        """Parse staged data using the same rules as startup."""
         self.chunks = []
         self.doc_revisions = {}
 
@@ -105,7 +109,6 @@ class KnowledgeBaseManager:
             doc_ver = doc.get("version", "v1.0")
             default_source = doc.get("source_ref", "")
 
-            # Compute stable revision hash for this individual document
             doc_raw = json.dumps(doc, sort_keys=True)
             self.doc_revisions[doc_id] = hashlib.sha256(doc_raw.encode("utf-8")).hexdigest()[:12]
 
@@ -118,7 +121,7 @@ class KnowledgeBaseManager:
                     source_ref=c.get("source_ref", default_source),
                     text=c.get("text", ""),
                     page_number=int(c.get("page_number", 1)),
-                    source_url=c.get("source_url", f"/docs/policies/{doc_id}.pdf#page={c.get('page_number', 1)}"),
+                    source_url=c.get("source_url", ""),
                     doc_version=doc_ver,
                 )
                 self.chunks.append(chunk)
@@ -127,35 +130,6 @@ class KnowledgeBaseManager:
         rev_manifest = json.dumps(self.doc_revisions, sort_keys=True)
         self.collection_revision = hashlib.sha256(rev_manifest.encode("utf-8")).hexdigest()[:16]
         self.version_hash = self.collection_revision
-
-    def update_document_chunk(self, chunk_id: str, new_text: str) -> str:
-        """
-        Update a chunk text, persist changes, and immediately update document revisions.
-        Does not require running scans on subsequent queries.
-        """
-        raw_content = self.kb_path.read_text(encoding="utf-8")
-        data = json.loads(raw_content)
-
-        updated = False
-        target_doc_id = ""
-        for doc in data.get("documents", []):
-            for c in doc.get("chunks", []):
-                if c.get("chunk_id") == chunk_id:
-                    c["text"] = new_text
-                    updated = True
-                    target_doc_id = doc.get("doc_id", "")
-                    break
-            if updated:
-                break
-
-        if not updated:
-            raise ValueError(f"Chunk '{chunk_id}' not found.")
-
-        # Persist to disk and reload revision manifest once
-        self.kb_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-        self.load()
-        logger.info(f"[KB] Persisted revision update for doc '{target_doc_id}'. New collection revision: {self.collection_revision}")
-        return self.collection_revision
 
 
 class BM25Retriever:
@@ -166,19 +140,17 @@ class BM25Retriever:
         self.k1 = k1
         self.b = b
         self.corpus_size = len(chunks)
-        self.tokenized_corpus = [self._tokenize(c.text + " " + c.title) for c in chunks]
-        self.doc_lengths = [len(doc) for doc in self.tokenized_corpus]
+        corpus = [self._tokenize(c.text + " " + c.title) for c in chunks]
+        self.term_counts = [Counter(doc) for doc in corpus]
+        self.doc_lengths = [len(doc) for doc in corpus]
         self.avg_doc_len = sum(self.doc_lengths) / max(self.corpus_size, 1)
 
         # Precompute document frequencies and IDFs
-        self.df: Dict[str, int] = {}
-        for doc in self.tokenized_corpus:
-            for term in set(doc):
-                self.df[term] = self.df.get(term, 0) + 1
-
-        self.idf: Dict[str, float] = {}
-        for term, freq in self.df.items():
-            self.idf[term] = math.log(1.0 + (self.corpus_size - freq + 0.5) / (freq + 0.5))
+        frequencies = Counter(term for counts in self.term_counts for term in counts)
+        self.idf = {
+            term: math.log(1.0 + (self.corpus_size - freq + 0.5) / (freq + 0.5))
+            for term, freq in frequencies.items()
+        }
 
     @staticmethod
     def _tokenize(text: str) -> List[str]:
@@ -208,12 +180,9 @@ class BM25Retriever:
             return [(c, 0.0) for c in self.chunks[:top_k]]
 
         scores = []
-        for idx, doc_tokens in enumerate(self.tokenized_corpus):
+        for idx, token_counts in enumerate(self.term_counts):
             score = 0.0
             doc_len = self.doc_lengths[idx]
-            token_counts = {}
-            for t in doc_tokens:
-                token_counts[t] = token_counts.get(t, 0) + 1
 
             for q_term in query_tokens:
                 if q_term not in token_counts:
@@ -232,23 +201,38 @@ class BM25Retriever:
 class DenseRetriever:
     """Dense semantic retriever using Sentence Transformers and in-memory cosine search."""
 
-    def __init__(self, chunks: List[KBChunk], model_name: str = "all-MiniLM-L6-v2"):
-        from sentence_transformers import SentenceTransformer
+    def __init__(self, chunks: List[KBChunk], model_name: Optional[str] = None, model=None, previous=None):
         self.chunks = chunks
-        self.model_name = model_name
-        try:
-            self.model = SentenceTransformer(model_name, local_files_only=True)
-        except Exception:
-            self.model = SentenceTransformer(model_name)
-
-        # Precompute normalized embeddings for all chunks once at startup
+        self.model_name = model_name or os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+        if model is not None:
+            self.model = model
+        else:
+            self.model = self._load_model()
+        self._encode_lock = previous._encode_lock if previous is not None and previous.model is self.model else Lock()
         texts = [f"{c.title}: {c.text}" for c in self.chunks]
-        embeddings = self.model.encode(texts, normalize_embeddings=True, show_progress_bar=False)
-        self.embeddings = np.array(embeddings, dtype=np.float32)
+        reused = {}
+        if previous is not None and previous.model is self.model:
+            reused = {f"{c.title}: {c.text}": vector for c, vector in zip(previous.chunks, previous.embeddings)}
+        missing = list(dict.fromkeys(text for text in texts if text not in reused))
+        if missing:
+            with self._encode_lock:
+                vectors = self.model.encode(missing, normalize_embeddings=True, show_progress_bar=False)
+            reused.update(zip(missing, vectors))
+        self.embeddings = np.array([reused[text] for text in texts], dtype=np.float32)
+
+    def _load_model(self):
+        from sentence_transformers import SentenceTransformer
+        try:
+            return SentenceTransformer(self.model_name, local_files_only=True)
+        except Exception:
+            return SentenceTransformer(self.model_name)
 
     def search(self, query: str, top_k: int = 5) -> List[Tuple[KBChunk, float]]:
         """Encode query and return top_k chunks ranked by cosine similarity."""
-        query_vec = self.model.encode([query], normalize_embeddings=True, show_progress_bar=False)[0]
+        if not self.chunks:
+            return []
+        with self._encode_lock:
+            query_vec = self.model.encode([query], normalize_embeddings=True, show_progress_bar=False)[0]
         # Dot product of normalized vectors equals cosine similarity in [-1.0, 1.0]
         sims = np.dot(self.embeddings, query_vec)
 
@@ -270,50 +254,33 @@ class HybridRetriever:
     def search(
         self,
         query: str,
-        candidate_pool_size: int = 8,
-        final_top_k: int = 4
+        candidate_pool_size: int = 50,
+        final_top_k: int = 4,
+        metadata_filters: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Execute BM25 and Dense search, fuse results using RRF, and return top candidates.
+        Search both branches concurrently, filter each list, then fuse with RRF.
         """
-        bm25_results = self.bm25.search(query, top_k=candidate_pool_size)
-        dense_results = self.dense.search(query, top_k=candidate_pool_size)
+        if (metadata_filters or {}).keys() - FILTER_FIELDS:
+            raise ValueError("Unsupported metadata filter.")
+        keyword = SEARCH_EXECUTOR.submit(self.bm25.search, query, top_k=candidate_pool_size)
+        semantic = SEARCH_EXECUTOR.submit(self.dense.search, query, top_k=candidate_pool_size)
+        bm25_results = filter_results([(chunk, score) for chunk, score in keyword.result() if score > 0], metadata_filters)
+        dense_results = filter_results(semantic.result(), metadata_filters)
 
         rrf_scores: Dict[str, float] = {}
         chunk_lookup: Dict[str, KBChunk] = {}
-        debug_ranks: Dict[str, Dict[str, int]] = {}
+        provenance: Dict[str, Dict[str, Any]] = {}
+        for branch, ranking in (("keyword", bm25_results), ("semantic", dense_results)):
+            for rank, (chunk, score) in enumerate(ranking, start=1):
+                cid = chunk.chunk_id
+                chunk_lookup[cid] = chunk
+                rrf_scores[cid] = rrf_scores.get(cid, 0.0) + 1.0 / (self.rrf_k + rank)
+                provenance.setdefault(cid, {}).update({f"{branch}_rank": rank, f"{branch}_score": score})
 
-        # 1. RRF from BM25 ranks
-        for rank, (chunk, score) in enumerate(bm25_results, start=1):
-            cid = chunk.chunk_id
-            chunk_lookup[cid] = chunk
-            rrf_scores[cid] = rrf_scores.get(cid, 0.0) + (1.0 / (self.rrf_k + rank))
-            debug_ranks[cid] = {"bm25_rank": rank, "bm25_score": score}
-
-        # 2. RRF from Dense ranks
-        for rank, (chunk, score) in enumerate(dense_results, start=1):
-            cid = chunk.chunk_id
-            chunk_lookup[cid] = chunk
-            rrf_scores[cid] = rrf_scores.get(cid, 0.0) + (1.0 / (self.rrf_k + rank))
-            if cid not in debug_ranks:
-                debug_ranks[cid] = {}
-            debug_ranks[cid]["dense_rank"] = rank
-            debug_ranks[cid]["dense_score"] = score
-
-        # 3. Sort by combined RRF score
-        sorted_chunks = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)
-
-        results = []
-        for cid, rrf_score in sorted_chunks[:final_top_k]:
-            chunk = chunk_lookup[cid]
-            ranks = debug_ranks.get(cid, {})
-            results.append({
-                "chunk": chunk,
-                "rrf_score": rrf_score,
-                "bm25_rank": ranks.get("bm25_rank"),
-                "dense_rank": ranks.get("dense_rank"),
-                "dense_score": ranks.get("dense_score"),
-            })
-
-        return results
+        sorted_chunks = sorted(rrf_scores, key=rrf_scores.__getitem__, reverse=True)
+        return [
+            {"chunk": chunk_lookup[cid], "rrf_score": rrf_scores[cid], **provenance[cid]}
+            for cid in sorted_chunks[:final_top_k]
+        ]
 

@@ -67,7 +67,7 @@
     {
       "doc_id": "doc_order_cancellation",
       "title": "Order Cancellation and Modification Policy",
-      "version": "v1.0",
+      "version": "v1.1",
       "source_ref": "Page 1, Doc CAN-03",
       "chunks": [
         {
@@ -86,7 +86,7 @@
           "page_number": 1,
           "source_ref": "Page 1, Sec 3.2",
           "source_url": "",
-          "text": "If you need to change your shipping address, you must do so within the initial 30-minute window. Customer support cannot manually adjust shipping destinations once an order has progressed to 'Processing' or 'Dispatched'. If your order has already shipped, you cannot cancel it mid-transit; you should wait for the package to arrive, refuse the parcel at delivery, or generate a free prepaid return label in your account portal once it is delivered."
+          "text": "If you need to change your shipping address, you must do so within the initial 30-minute window. Customer support cannot manually adjust shipping destinations once an order has progressed to 'Processing' or 'Dispatched'. If your order has already shipped, you cannot cancel it mid-transit; wait for delivery and initiate a return in your account portal. The Refunds and Returns Policy applies: a prepaid label for a change-of-mind or accidental-order return costs $5.99, deducted from your refund. Return shipping is free only for our fulfillment error, a damaged product, or a verified manufacturer defect. Shipment does not waive these return fees or eligibility conditions."
         }
       ]
     },

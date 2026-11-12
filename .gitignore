@@ -15,6 +15,11 @@ chroma_db/
 
 # Pytest cache & test artifacts
 .pytest_cache/
+backend/data/.server.lock
+.test-tmp*/
+benchmarks/evaluation_report.json
+benchmarks/retrieval_report.json
+benchmarks/benchmark_report.json
 pytest-cache-files-*/
 
 # Node.js & Next.js
@@ -25,10 +30,16 @@ build/
 dist/
 
 # User documents
-documents/*.pdf
 documents/*
 !documents/.gitkeep
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Generated live evaluation evidence
+benchmarks/reports/
+
+# Local editor settings
+.vscode/
+.idea/

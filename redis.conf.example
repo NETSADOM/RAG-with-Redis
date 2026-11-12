@@ -1,0 +1,4 @@
+# Example for a dedicated, self-hosted cache instance.
+# Customer support cache memory limit.
+maxmemory 30mb
+maxmemory-policy allkeys-lru

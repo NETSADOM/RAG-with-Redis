@@ -26,7 +26,7 @@ async def lifespan(app):
     app.state.limiter = RequestLimiter(limit=positive_setting("CHAT_REQUESTS_PER_MINUTE", 20))
     # Multiple processes with independent policy revisions must not serve this store.
     with single_worker(Path(__file__).parent / "data" / ".server.lock"):
-        cache = CustomerSupportCache()
+        cache = CustomerSupportCache(require_connection=False)
         try:
             app.state.pipeline = CustomerSupportRAGPipeline(cache=cache, generator=generator)
             yield

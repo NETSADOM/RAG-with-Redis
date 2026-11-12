@@ -1,44 +1,38 @@
-# Byte-compiled / optimized / DLL files
+# Python bytecode and build artifacts
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+build/
+dist/
 
 # Environments & Sensitive Keys
 .env
+.env.*
+!.env.example
 .venv/
 env/
 venv/
 ENV/
 
-# ChromaDB local vector storage
-chroma_db/
-
 # Pytest cache & test artifacts
 .pytest_cache/
-backend/data/.server.lock
 .test-tmp*/
+pytest-cache-files-*/
+
+# Runtime lock and staged policy updates
+backend/data/.server.lock
+backend/data/knowledge_base.json.tmp
+
+# Generated benchmark and evaluation reports
 benchmarks/evaluation_report.json
 benchmarks/retrieval_report.json
 benchmarks/benchmark_report.json
-pytest-cache-files-*/
-
-# Node.js & Next.js
-node_modules/
-.next/
-out/
-build/
-dist/
-
-# User documents
-documents/*
-!documents/.gitkeep
+benchmarks/reports/
 
 # OS files
 .DS_Store
 Thumbs.db
-
-# Generated live evaluation evidence
-benchmarks/reports/
 
 # Local editor settings
 .vscode/

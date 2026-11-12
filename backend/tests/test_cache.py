@@ -1,5 +1,4 @@
 import pytest
-from backend.cache.redis_cache import CustomerSupportCache
 from unittest.mock import MagicMock, patch
 import redis
 from fastapi.testclient import TestClient
@@ -152,7 +151,7 @@ def test_chat_and_policy_browsing_work_during_runtime_outage(pipeline):
         assert result.json()["cache_degraded"] and result.json()["citations"]
         assert not result.json()["cache_hit"]
         assert client.get("/api/kb").json()["chunks"][0]["text"] == "30 days"
-        pipeline.cache._client.set.assert_not_called()
+        assert all(":lock:" in call.args[0] for call in pipeline.cache._client.set.call_args_list)
         assert pipeline.cache._client.get.call_count == 1
     finally:
         app.dependency_overrides.clear()
@@ -183,3 +182,34 @@ def test_explicit_cache_bypass_does_not_wait_for_redis(pipeline):
     result = pipeline.answer_question("Returns?", skip_cache=True)
     assert result.is_supported
     assert not pipeline.cache._client.mock_calls
+
+
+def test_optional_startup_recovers_after_cooldown(monkeypatch):
+    monkeypatch.setattr(CustomerSupportCache, "_connect", CONNECT)
+    client = MagicMock()
+    with patch("backend.cache.redis_cache.redis.Redis.from_url", side_effect=[redis.ConnectionError(), client]):
+        cache = CustomerSupportCache(require_connection=False)
+        assert not cache.is_available
+        cache._retry_after = 1
+        assert cache.is_available
+        assert cache._client is client
+        assert cache._retry_after == 0
+
+
+def test_distributed_lock_ownership(clean_cache):
+    key = "cs_rag:lock:test"
+    assert clean_cache.acquire_answer_lock(key, "owner", 30)
+    assert not clean_cache.acquire_answer_lock(key, "other", 30)
+    clean_cache.release_answer_lock(key, "other")
+    assert clean_cache._client.get(key) == "owner"
+    clean_cache.release_answer_lock(key, "owner")
+    assert clean_cache.acquire_answer_lock(key, "other", 30)
+
+
+def test_distributed_wait_timeout_runs_pipeline(pipeline, monkeypatch):
+    monkeypatch.setattr(pipeline.cache, "acquire_answer_lock", lambda *args: False)
+    monkeypatch.setattr("backend.rag.pipeline.time.sleep", lambda seconds: None)
+    with patch("backend.rag.pipeline.time.monotonic", side_effect=[0, 3001]):
+        result = pipeline.answer_question("Returns?")
+    assert result.is_supported
+    pipeline.generator.generate.assert_called_once()

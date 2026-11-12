@@ -1,73 +1,155 @@
-# NovaCart: Caching Design and Trade-offs
+﻿# NovaCart: Policy-Grounded Support with Redis
 
-NovaCart uses Redis to cache verified answers and reduce repeated retrieval and language-model calls. This report compares caching strategies and explains the application's approach to freshness, memory management and Redis outages.
+NovaCart is a customer-support application that answers questions using a local policy knowledge base. It combines document retrieval, reranking and a language model to produce cited answers, then uses Redis to reuse verified results and reduce repeated generation work.
 
-## Caching strategy comparisons
+The application includes a FastAPI backend and a plain HTML, CSS and JavaScript interface. Policy documents remain the source of truth; the language model interprets questions and explains the retrieved facts in customer-friendly language.
 
-The following tables compare read and write strategies. The implementation sections below explain the choices used in NovaCart.
+## How answers are produced
 
-| Read strategy | How it works | Trade-off |
+1. Matching requests share an in-process result and coordinate through a Redis lock when Redis is available.
+2. The pipeline checks the answer cache using the normalized question, policy revision, model and retrieval settings.
+3. On a miss, keyword and semantic retrieval identify candidate passages, followed by reranking when enabled and available.
+4. The language model generates concise claims with supporting quotations. A separate model call audits those claims against the retrieved documents.
+5. The application checks quotation provenance, citation structure and numeric evidence before returning the answer. Eligible supported answers are cached with their citations.
+
+A cache hit avoids retrieval and model generation. Failed and unsupported answers are not cached. Evidence checks reduce unsupported responses, but do not guarantee factual accuracy.
+
+### Typo tolerance and natural responses
+
+Keyword retrieval expands an unknown alphabetic word of at least four characters when there is exactly one vocabulary match within a single insertion, deletion, substitution or adjacent-letter swap. Numeric tokens are not corrected. The original question is preserved for the language model.
+
+Generation and verification prompts accept obvious spelling mistakes when intent is clear and request natural paraphrasing. Supporting quotations must still match the source. Ambiguous questions and missing policy facts can still produce a refusal; the application does not promise unrestricted spelling correction or answers outside its documents.
+
+## Run locally
+
+Use Python 3.12 and install the application and test dependencies from the single requirements file:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
+
+Create a `.env` file in the repository root with your own values:
+
+```dotenv
+REDIS_URL=redis://localhost:6379/0
+GEMINI_API_KEY=replace-with-your-key
+GEMINI_MODEL=replace-with-your-model
+CACHE_TTL=86400
+ANSWER_WAIT_SECONDS=3000
+MAX_CONCURRENT_GENERATIONS=2
+CHAT_REQUESTS_PER_MINUTE=20
+ADMIN_API_KEY=replace-with-a-private-random-token
+```
+
+Gemini is selected when its API key is configured, followed by Groq, then an OpenAI-compatible provider. The alternatives use `GROQ_API_KEY` and `GROQ_MODEL`, or `OPENAI_API_KEY` and `OPENAI_MODEL`. Configure the intended provider explicitly. Hosted Redis connections can use `rediss://` for TLS.
+
+```powershell
+python check_redis.py
+python run.py
+```
+
+The Redis check requires a working connection. The application itself can start in degraded mode without Redis. Open **http://127.0.0.1:8000**; API documentation is available at **http://127.0.0.1:8000/docs**. Retrieval models may require downloads on first use.
+
+Restart the backend after editing `.env`. Existing process environment variables can override values in that file. Keep `.env` private; it is excluded from Git.
+
+## Cache design and trade-offs
+
+### Cache-aside versus read-through
+
+| Strategy | Behavior | Trade-off |
 | --- | --- | --- |
-| **Cache-aside (used)** | The application checks the cache, handles a miss and caches the result. | Supports our custom retrieval and generation workflow, but requires application logic. |
-| Read-through | A cache layer loads missing data through a configured loader. | Simplifies callers, but moves the custom miss workflow into that layer. Redis alone does not provide this loader. |
+| **Cache-aside: used for answers** | The application checks Redis, computes a missing answer and stores an eligible result. | Gives the application control over retrieval, verification and cache eligibility. |
+| Read-through | A cache layer invokes a loader when data is missing. | Simplifies callers, but requires the custom loading workflow inside that layer. Redis alone does not supply this loader. |
 
-| Write strategy | How it works | Trade-off |
+NovaCart uses **cache-aside instead of read-through** because a miss requires a custom workflow: **retrieval -> reranking -> generation -> evidence verification -> caching**.
+
+### Write strategies
+
+| Strategy | Behavior | Trade-off |
 | --- | --- | --- |
-| **Write-through** | Updates the cache and backing store synchronously before acknowledging success. | Keeps them aligned on successful writes, but adds latency and requires failure handling. NovaCart uses the write-through-style policy update process described below. |
-| Write-behind / write-back | Updates the cache first and persists changes asynchronously. | Fast writes and possible batching, but pending writes can be lost and storage can lag. |
-| Write-around | Writes directly to storage; later reads populate the cache. | Avoids caching rarely read writes, but the next read may miss; existing cached copies must be invalidated. |
+| **Write-through** | Updates cache and storage synchronously before acknowledging success. | Adds write latency and requires failure handling. NovaCart uses an application-managed variant for policy updates. |
+| Write-behind / write-back | Updates cache first and persists changes asynchronously. | Allows fast writes and batching, but storage can lag and pending changes can be lost. Not implemented here. |
+| Write-around | Writes directly to storage; later reads populate the cache. | Avoids caching rarely read writes, but requires invalidation of existing copies and may cause a later miss. Not used for policy updates. |
 
-## TTL, invalidation and eviction
+For policy updates, NovaCart prepares replacement indexes, writes the new revision snapshot to Redis, atomically replaces the authoritative JSON file and activates the revision. Redis write failure prevents activation. This is a write-through-style sequence, not a distributed transaction.
 
-- **TTL:** A time limit after which an entry expires. NovaCart defaults to 24 hours; TTL alone does not reflect policy changes immediately.
-- **Invalidation:** Makes outdated entries unusable after data changes. NovaCart changes the policy revision in cache keys.
-- **Eviction:** Removes entries to free memory, potentially before their TTL expires. NovaCart's connected Redis uses `volatile-lru`.
+### TTL, invalidation and eviction
 
-## Eviction algorithm comparisons
-
-| Algorithm | Removes | Trade-off |
+| Mechanism | Purpose | NovaCart behavior |
 | --- | --- | --- |
-| LRU | Least recently accessed entries. | Adapts to recent demand, but one-time scans can displace useful entries. |
-| LFU | Least frequently accessed entries. | Retains popular entries, but can adapt slowly when popularity changes. |
-| FIFO | Earliest inserted entries. | Simple ordering, but ignores subsequent use. |
-| Random | Randomly selected entries. | Requires no popularity tracking, but may discard frequently used entries. |
+| TTL | Expires an entry after a specified lifetime. | Answers and policy snapshots expire after **24 hours** by default through `CACHE_TTL`. Reads do not refresh answer TTLs. |
+| Invalidation | Prevents reuse of outdated data after a change. | Policy updates change the revision in answer keys. New requests cannot reuse the previous revision's answers. |
+| Eviction | Removes entries under memory pressure, potentially before expiration. | Redis applies its server-configured eviction policy. Missing entries can be regenerated. |
 
-## Supported Redis eviction policies
+Revision-based invalidation is simple, but also invalidates answers unrelated to an edited policy. Old entries remain until expiration or eviction.
 
-Redis 7 supports `allkeys-lru`, `allkeys-lfu`, `allkeys-random`, `volatile-lru`, `volatile-lfu`, `volatile-random`, `volatile-ttl` and `noeviction`. Redis 8.6 adds `allkeys-lrm` and `volatile-lrm` (least recently modified).
+### Eviction algorithms
 
-`allkeys-*` considers all keys; `volatile-*` considers only keys with TTLs. `volatile-ttl` selects the shortest remaining TTL. `noeviction` rejects memory-growing writes when the limit is reached. Redis approximates LRU and LFU and has no built-in FIFO policy. LRM tracks modification time, not insertion order. See the [official Redis eviction documentation](https://redis.io/docs/latest/develop/reference/eviction/).
+| Algorithm | Evicts | Trade-off |
+| --- | --- | --- |
+| LRU | Least recently accessed entries. | Favors recent demand; one-time scans may displace useful entries. |
+| LFU | Least frequently accessed entries. | Favors popular entries; adaptation to changing demand may be slower. |
+| FIFO | Earliest inserted entries. | Simple ordering that ignores later usage. |
+| Random | Randomly selected entries. | Requires no popularity tracking but can discard frequently used data. |
 
-## Application implementation
+Redis 7 supports `allkeys-lru`, `allkeys-lfu`, `allkeys-random`, `volatile-lru`, `volatile-lfu`, `volatile-random`, `volatile-ttl` and `noeviction`. Redis 8.6 adds `allkeys-lrm` and `volatile-lrm`, based on least recent modification.
 
-### Cache-aside for answers
+`allkeys-*` considers all keys; `volatile-*` considers only expiring keys. `volatile-ttl` favors eviction of keys with the shortest remaining TTL. `noeviction` rejects memory-growing writes at the limit. Redis approximates LRU and LFU and has no built-in FIFO policy. See the [Redis eviction reference](https://redis.io/docs/latest/develop/reference/eviction/).
 
-NovaCart uses **cache-aside instead of read-through** because a cache miss requires a custom workflow:
+### Verified Redis policy: `volatile-lru`
 
-**Retrieval -> reranking -> generation -> evidence verification -> cache the supported answer.**
+The connected instance previously reported **`volatile-lru`** through `INFO memory`. Under memory pressure, this policy evicts approximately the least recently used entries among keys with TTLs. It favors recently reused answers, reducing repeated retrieval and model calls.
 
-The application checks Redis first. A hit returns the saved answer and citations without repeating that workflow. Cache keys include the normalized question, policy revision, model and retrieval settings. Failed or unsupported answers are not cached.
+Answer keys, policy snapshots and distributed request locks all expire and are therefore eligible. Eviction of a request lock can allow duplicate generation before its lease ends; the lock reduces duplicate work but does not guarantee exactly-once execution. Non-expiring keys are excluded.
 
-### Synchronous policy updates
+The application does not enforce Redis server settings. The included `redis.conf.example` instead demonstrates a **30 MB, `allkeys-lru`** configuration for a dedicated local instance. That example is separate from the previously inspected server configuration; verify the actual server after changing `REDIS_URL`.
 
-Policy updates use an application-managed **write-through-style** process: prepare replacement indexes, write the new revision's snapshot to Redis, atomically replace the authoritative JSON file, then activate the revision. A Redis write failure prevents the update from becoming active. This is not a distributed transaction.
+## Redis outages and recovery
 
-### TTL and invalidation
+Redis is the primary shared cache. If it is unavailable at startup or fails during operation, chat runs the retrieval and generation pipeline without caching, while policy browsing uses the loaded snapshot. No replacement in-memory answer cache is introduced.
 
-Answer and policy-snapshot keys expire after **24 hours by default**, configurable through `CACHE_TTL`. Reading an answer does not extend its TTL.
+Redis calls use one-second connection and socket timeouts. Failures trigger a **30-second cooldown**, after which demand can trigger a recovery attempt. Caching resumes after successful recovery. The health endpoint reports degraded cache availability instead of treating a Redis outage alone as a complete application failure.
 
-A policy update changes the collection revision included in answer keys. New requests therefore bypass old answers immediately; those old keys remain until expiration or eviction. This simple approach also invalidates answers unrelated to the edited policy.
+Uncached operation increases latency and provider usage. Model credentials, available retrieval resources and the model provider are still required. Administrative policy updates and cache clearing require Redis.
 
-### Redis eviction policy: `volatile-lru`
+## Concurrent requests
 
- When the configured memory limit is reached, Redis uses an approximation of least recently used eviction to remove keys that have an expiration time.
+Matching requests in one process share an in-progress result. Redis additionally coordinates matching requests using expiring locks with unique ownership tokens. A waiting process rechecks the answer cache after acquiring the lock; release checks ownership before deleting it.
 
-All NovaCart answer and policy-snapshot keys have TTLs and are therefore eligible for eviction. This policy favors recently accessed entries, helping retain reusable answers and reduce retrieval work and language-model calls. Evicted entries can be rebuilt on demand, although subsequent requests may incur additional latency and generation costs.
+`ANSWER_WAIT_SECONDS` defaults to **3000 seconds (50 minutes)** and also controls the Redis lease. After the waiting limit, a request may execute independently, subject to generation capacity. Unsupported answers are not cached and may be generated again by waiting processes. Expired or evicted locks can permit overlapping work.
 
-Keys without TTLs are excluded from this policy. The application's cache configuration is managed by the Redis server; NovaCart does not modify server eviction settings. 
+The default limits are **20 requests per minute per client IP** and **2 simultaneous generations per process**. Capacity exhaustion can reject a request rather than start additional generation. The 50-minute setting limits coordination waiting; it does not guarantee that a browser, proxy or provider will keep a request open that long.
 
-### Runtime fallback
+The application retains its **single-worker restriction** for the local policy store. Distributed request locking alone does not make policy updates safe across multiple workers or deployments.
 
-Redis is **mandatory at startup**. If it fails later, chat generates fresh verified answers without caching, and policy browsing uses the loaded snapshot. Redis operations use one-second connection/socket timeouts and a **30-second recovery cooldown**. Caching resumes after a successful recovery attempt.
+## Repository structure
 
-This keeps chat available but increases response time and LLM usage. Request and generation limits remain active, and administrative policy updates still require Redis.
+```text
+backend/
+  cache/           Redis answers, snapshots and request locks
+  rag/             Retrieval, reranking, generation and orchestration
+  data/            Authoritative policy knowledge base
+  tests/           Cache, API, retrieval and generation tests
+  main.py          FastAPI routes and application lifecycle
+  admission.py     Request and generation limits
+  locking.py       Synchronization and single-worker protection
+frontend/public/   Browser interface
+benchmarks/        Retrieval and answer-quality evaluation tools
+check_redis.py     Redis connectivity check
+redis.conf.example Example self-hosted Redis configuration
+requirements.txt   Application and test dependencies
+run.py             Local startup entry point
+```
+
+## Validation
+
+```powershell
+python -m pytest backend/tests -q -p no:cacheprovider
+python benchmarks/evaluate_quality.py --validate-only
+```
+
+The latest local suite completed with **84 passed and 4 skipped**. Real Redis integration checks require their test configuration; skipped checks do not establish live Redis behavior. Automated tests use controlled fixtures and do not establish live language-model accuracy.
+
+The latest typo-handling and paraphrasing changes have not yet been validated through a new live model evaluation. Live quality evaluation sends questions and retrieved policy excerpts to the configured provider and consumes API credits.

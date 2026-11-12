@@ -13,7 +13,6 @@ from backend.locking import synchronized
 
 logger = logging.getLogger(__name__)
 
-# Answer schema namespace; Redis manages memory-pressure eviction.
 KEY_PREFIX = "cs_rag:ans:v3:"
 
 
@@ -29,6 +28,7 @@ class CustomerSupportCache:
         redis_url: Optional[str] = None,
         default_ttl: Optional[int] = None,
         namespace: str = "cs_rag",
+        require_connection: bool = True,
     ):
         if not re.fullmatch(r"[a-zA-Z0-9_:-]+", namespace):
             raise ValueError("Invalid cache namespace.")
@@ -49,7 +49,13 @@ class CustomerSupportCache:
         self.total_hit_latency_ms = 0.0
         self.total_miss_latency_ms = 0.0
 
-        self._connect()
+        try:
+            self._connect()
+        except RedisUnavailable:
+            if require_connection:
+                raise
+            self._retry_after = time.monotonic() + 30
+            logger.warning("Redis unavailable; serving uncached requests until recovery.")
 
     def _connect(self) -> None:
         """Connect to local or hosted Redis. rediss:// enables verified TLS."""
@@ -74,6 +80,22 @@ class CustomerSupportCache:
         self._client = client
         logger.info("Connected to Redis.")
 
+    def acquire_answer_lock(self, key, token, lease_seconds):
+        return bool(self._redis_call("set", key, token, nx=True, ex=lease_seconds))
+
+    def release_answer_lock(self, key, token):
+        # WATCH prevents an expired owner's cleanup from deleting a new lease.
+        try:
+            with self._client.pipeline() as transaction:
+                transaction.watch(key)
+                if transaction.get(key) != token:
+                    return
+                transaction.multi()
+                transaction.delete(key)
+                transaction.execute()
+        except redis.RedisError:
+            pass  # The lease expires even if Redis is unavailable during cleanup.
+
     def require_available(self):
         if not self.is_available:
             raise RedisUnavailable("Redis is temporarily unavailable. Please try again.")
@@ -89,9 +111,9 @@ class CustomerSupportCache:
                 self._retry_after = now + 30
         try:
             if self._client is None:
-                raise redis.ConnectionError()
+                self._connect()
             result = getattr(self._client, command)(*args, **kwargs)
-        except redis.RedisError:
+        except (redis.RedisError, RedisUnavailable):
             with self._lock:
                 self._retry_after = time.monotonic() + 30
             raise RedisUnavailable("Redis is temporarily unavailable.") from None
@@ -108,8 +130,6 @@ class CustomerSupportCache:
     @property
     def is_available(self) -> bool:
         """Check if Redis connection is active and operational."""
-        if not self._client:
-            return False
         try:
             return bool(self._redis_call("ping"))
         except Exception:

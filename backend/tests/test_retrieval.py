@@ -42,3 +42,14 @@ def test_metadata_constraints_apply_to_both_branches_and_can_return_empty():
     assert hybrid.search('delivery', metadata_filters={'doc_id': 'absent'}) == []
     with pytest.raises(ValueError):
         hybrid.search('delivery', metadata_filters={'unknown': 'value'})
+
+
+def test_keyword_retrieval_handles_obvious_typo_without_rewriting_numbers():
+    from backend.rag.retrieval import BM25Retriever, KBChunk
+    chunks = [KBChunk("c1", "returns", "Returns", "Window", "Page 1", "Refunds within 30 days."),
+              KBChunk("c2", "shipping", "Shipping", "Delivery", "Page 2", "Delivery takes 5 days.")]
+    retriever = BM25Retriever(chunks)
+    assert retriever.search("refudns")[0][0].chunk_id == "c1"
+    assert retriever.search("refudns")[0][1] > 0
+    assert "refunds" in retriever._query_tokens("refnds")
+    assert retriever._query_tokens("90") == ["90"]

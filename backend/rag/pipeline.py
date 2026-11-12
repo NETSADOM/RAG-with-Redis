@@ -4,6 +4,7 @@ import copy
 import json
 import hashlib
 import time
+from uuid import uuid4
 from concurrent.futures import Future, TimeoutError as FutureTimeout
 from pathlib import Path
 from dotenv import load_dotenv
@@ -20,7 +21,7 @@ from backend.rag.generator import CustomerSupportGenerator, CustomerSupportAnswe
 from backend.cache.redis_cache import CustomerSupportCache, RedisUnavailable
 
 logger = logging.getLogger(__name__)
-RETRIEVAL_VERSION = "hybrid-filtered-v3"
+RETRIEVAL_VERSION = "hybrid-filtered-v4"
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
@@ -212,9 +213,10 @@ class CustomerSupportRAGPipeline:
                 self._inflight[key] = pending
         if not leader:
             try:
-                result = copy.deepcopy(pending.result(timeout=55))
+                result = copy.deepcopy(pending.result(timeout=positive_setting("ANSWER_WAIT_SECONDS", 3000)))
             except FutureTimeout:
-                raise RuntimeError("The pending answer is taking too long. Please retry.") from None
+                return self._compute_answer(question, skip_cache, use_reranker,
+                                            top_k_retrieve, top_k_final, metadata_filters)
             result.question = question.strip()
             result.latency_ms = round((time.perf_counter() - started) * 1000, 2)
             return result
@@ -230,7 +232,39 @@ class CustomerSupportRAGPipeline:
             with self._lock:
                 self._inflight.pop(key, None)
 
-    def _answer_question(
+    def _answer_question(self, question, skip_cache=False, use_reranker=True,
+                         top_k_retrieve=50, top_k_final=4, metadata_filters=None):
+        args = (question, skip_cache, use_reranker, top_k_retrieve, top_k_final, metadata_filters)
+        if skip_cache:
+            return self._compute_answer(*args)
+        with self._lock:
+            identity = json.dumps([
+                self.cache.normalize_query(question), self.kb_manager.get_collection_revision(),
+                self.generator.model, getattr(self.reranker, "model_name", ""),
+                RETRIEVAL_VERSION, use_reranker, top_k_retrieve, top_k_final, metadata_filters or {},
+            ], sort_keys=True)
+        key = f"{self.cache.namespace}:lock:{hashlib.sha256(identity.encode()).hexdigest()}"
+        token = uuid4().hex
+        wait_seconds = positive_setting("ANSWER_WAIT_SECONDS", 3000)
+        deadline = time.monotonic() + wait_seconds
+        acquired = False
+        try:
+            while True:
+                try:
+                    acquired = self.cache.acquire_answer_lock(key, token, wait_seconds)
+                except RedisUnavailable:
+                    break
+                if acquired or time.monotonic() >= deadline:
+                    break
+                time.sleep(min(0.1, max(0, deadline - time.monotonic())))
+            # Recheck the answer cache after acquiring the lease; the previous
+            # owner may have populated it while this request was waiting.
+            return self._compute_answer(*args)
+        finally:
+            if acquired:
+                self.cache.release_answer_lock(key, token)
+
+    def _compute_answer(
         self,
         question: str,
         skip_cache: bool = False,
@@ -273,7 +307,7 @@ class CustomerSupportRAGPipeline:
                 is_supported=False,
             )
 
-        # Redis is mandatory at startup. During an outage, serve fresh grounded
+        # During a Redis outage, serve fresh grounded
         # answers without introducing a second cache or returning stale policies.
         cache_degraded = False
 

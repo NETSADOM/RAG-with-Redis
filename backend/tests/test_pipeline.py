@@ -1,14 +1,11 @@
 import json
 import pytest
-from unittest.mock import MagicMock
 from backend.rag.retrieval import KnowledgeBaseManager, KBChunk, BM25Retriever, DenseRetriever, HybridRetriever
 from backend.rag.reranker import CrossEncoderReranker
 from backend.rag.generator import CustomerSupportGenerator, CustomerSupportAnswer
 from backend.cache.redis_cache import CustomerSupportCache, RedisUnavailable
-from backend.rag.pipeline import CustomerSupportRAGPipeline
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
-from backend.rag.retrieval import KnowledgeBaseManager
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event, RLock
 from unittest.mock import Mock
@@ -420,6 +417,7 @@ def test_policy_cache_write_failure_preserves_active_revision(pipeline):
 
 def test_cache_outage_runs_uncached_generation(pipeline):
     pipeline.cache._client = None
+    pipeline.cache._retry_after = float("inf")
     result = pipeline.answer_question("Returns?")
     assert result.is_supported and result.cache_degraded
     assert not result.cache_hit

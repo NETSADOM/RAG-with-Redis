@@ -173,9 +173,34 @@ class BM25Retriever:
         tokens = re.findall(r"\b[a-zA-Z0-9$]+\b", text.lower())
         return [t for t in tokens if t not in stopwords and len(t) > 1]
 
+    def _query_tokens(self, query):
+        tokens = self._tokenize(query)
+        expanded = list(tokens)
+        for token in tokens:
+            if token in self.idf or not token.isalpha() or len(token) < 4:
+                continue
+            matches = []
+            for word in self.idf:
+                if not word.isalpha() or abs(len(word) - len(token)) > 1:
+                    continue
+                if len(word) == len(token):
+                    differences = [i for i in range(len(word)) if word[i] != token[i]]
+                    close = len(differences) == 1
+                    if len(differences) == 2:
+                        i, j = differences
+                        close = j == i + 1 and word[i] == token[j] and word[j] == token[i]
+                else:
+                    shorter, longer = sorted((word, token), key=len)
+                    close = any(longer[:i] + longer[i + 1:] == shorter for i in range(len(longer)))
+                if close:
+                    matches.append(word)
+            if len(matches) == 1:
+                expanded.append(matches[0])
+        return expanded
+
     def search(self, query: str, top_k: int = 5) -> List[Tuple[KBChunk, float]]:
         """Compute BM25 score for all chunks and return top_k candidates."""
-        query_tokens = self._tokenize(query)
+        query_tokens = self._query_tokens(query)
         if not query_tokens:
             return [(c, 0.0) for c in self.chunks[:top_k]]
 

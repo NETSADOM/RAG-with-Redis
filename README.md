@@ -64,7 +64,7 @@ A policy update changes the collection revision included in answer keys. New req
 
 All NovaCart answer and policy-snapshot keys have TTLs and are therefore eligible for eviction. This policy favors recently accessed entries, helping retain reusable answers and reduce retrieval work and language-model calls. Evicted entries can be rebuilt on demand, although subsequent requests may incur additional latency and generation costs.
 
-Keys without TTLs are excluded from this policy. The application's cache configuration is managed by the Redis server; NovaCart does not modify server eviction settings. The live memory limit was not available during verification, so this report makes no claim about the instance's configured memory capacity.
+Keys without TTLs are excluded from this policy. The application's cache configuration is managed by the Redis server; NovaCart does not modify server eviction settings. 
 
 ### Runtime fallback
 

@@ -14,42 +14,6 @@ The application includes a FastAPI backend and a plain HTML, CSS and JavaScript 
 
 A cache hit avoids retrieval and model generation. Failed and unsupported answers are not cached. Evidence checks reduce unsupported responses, but do not guarantee factual accuracy.
 
-### Typo tolerance and natural responses
-
-Keyword retrieval expands an unknown alphabetic word of at least four characters when there is exactly one vocabulary match within a single insertion, deletion, substitution or adjacent-letter swap. Numeric tokens are not corrected. The original question is preserved for the language model.
-
-Generation and verification prompts accept obvious spelling mistakes when intent is clear and request natural paraphrasing. Supporting quotations must still match the source. Ambiguous questions and missing policy facts can still produce a refusal; the application does not promise unrestricted spelling correction or answers outside its documents.
-
-## Run locally
-
-Use Python 3.12 and install the application and test dependencies from the single requirements file:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-```
-
-Create a `.env` file in the repository root with your own values:
-
-```dotenv
-REDIS_URL=redis://localhost:6379/0
-GEMINI_API_KEY=replace-with-your-key
-GEMINI_MODEL=replace-with-your-model
-CACHE_TTL=86400
-ANSWER_WAIT_SECONDS=3000
-MAX_CONCURRENT_GENERATIONS=2
-CHAT_REQUESTS_PER_MINUTE=20
-ADMIN_API_KEY=replace-with-a-private-random-token
-```
-
-Gemini is selected when its API key is configured, followed by Groq, then an OpenAI-compatible provider. The alternatives use `GROQ_API_KEY` and `GROQ_MODEL`, or `OPENAI_API_KEY` and `OPENAI_MODEL`. Configure the intended provider explicitly. Hosted Redis connections can use `rediss://` for TLS.
-
-```powershell
-python check_redis.py
-python run.py
-```
-
 The Redis check requires a working connection. The application itself can start in degraded mode without Redis. Open **http://127.0.0.1:8000**; API documentation is available at **http://127.0.0.1:8000/docs**. Retrieval models may require downloads on first use.
 
 Restart the backend after editing `.env`. Existing process environment variables can override values in that file. Keep `.env` private; it is excluded from Git.
@@ -104,15 +68,12 @@ The connected instance previously reported **`volatile-lru`** through `INFO memo
 
 Answer keys, policy snapshots and distributed request locks all expire and are therefore eligible. Eviction of a request lock can allow duplicate generation before its lease ends; the lock reduces duplicate work but does not guarantee exactly-once execution. Non-expiring keys are excluded.
 
-The application does not enforce Redis server settings. The included `redis.conf.example` instead demonstrates a **30 MB, `allkeys-lru`** configuration for a dedicated local instance. That example is separate from the previously inspected server configuration; verify the actual server after changing `REDIS_URL`.
-
 ## Redis outages and recovery
 
 Redis is the primary shared cache. If it is unavailable at startup or fails during operation, chat runs the retrieval and generation pipeline without caching, while policy browsing uses the loaded snapshot. No replacement in-memory answer cache is introduced.
 
 Redis calls use one-second connection and socket timeouts. Failures trigger a **30-second cooldown**, after which demand can trigger a recovery attempt. Caching resumes after successful recovery. The health endpoint reports degraded cache availability instead of treating a Redis outage alone as a complete application failure.
 
-Uncached operation increases latency and provider usage. Model credentials, available retrieval resources and the model provider are still required. Administrative policy updates and cache clearing require Redis.
 
 ## Concurrent requests
 
@@ -150,6 +111,4 @@ python -m pytest backend/tests -q -p no:cacheprovider
 python benchmarks/evaluate_quality.py --validate-only
 ```
 
-The latest local suite completed with **84 passed and 4 skipped**. Real Redis integration checks require their test configuration; skipped checks do not establish live Redis behavior. Automated tests use controlled fixtures and do not establish live language-model accuracy.
 
-The latest typo-handling and paraphrasing changes have not yet been validated through a new live model evaluation. Live quality evaluation sends questions and retrieved policy excerpts to the configured provider and consumes API credits.

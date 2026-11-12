@@ -30,45 +30,8 @@ The inspected knowledge base contains **7 policy documents and 14 manually autho
 
 Redis is **not the vector database** in this implementation. Dense embeddings and retrieval indexes reside in Python memory. There is no semantic-answer cache, document-upload pipeline, automatic chunking service, background job queue, or persistent chat-history database.
 
-## 2. System context and deployment boundaries
 
-```mermaid
-flowchart TB
-    Customer[Customer browser]
-    Admin[Administrative API client]
-    subgraph App[One FastAPI / Uvicorn worker]
-        UI[Static HTML, CSS and JavaScript]
-        API[Validation, routes and admission control]
-        Pipeline[RAG orchestration]
-        Retrieval[BM25 + dense retrieval + RRF]
-        Rank[Cross-encoder reranker]
-        Gen[Claim generation and evidence validation]
-        Memory[Active policy revision and in-memory indexes]
-    end
-    Disk[(Authoritative JSON policy file)]
-    Redis[(Redis: answers, policy snapshots, leases)]
-    Provider[External LLM provider]
-    Models[Model distribution / local model cache]
-    Customer -->|Page and assets| UI
-    Customer -->|JSON over HTTP| API
-    Admin -->|Admin token| API
-    API --> Pipeline
-    Pipeline --> Retrieval
-    Retrieval --> Memory
-    Pipeline --> Rank
-    Pipeline --> Gen
-    Gen -->|HTTPS: generation and audit| Provider
-    Pipeline <-->|Cache and coordination| Redis
-    Disk -->|Load or staged replacement| Memory
-    Rank -.->|Load model weights| Models
-    Retrieval -.->|Load embedding model| Models
-```
-
-The local launcher binds to `127.0.0.1:8000` with `workers=1`. The browser and API are served from the same origin. The repository contains CI but no Dockerfile, Compose stack, Kubernetes manifests, reverse-proxy configuration, or automated production deployment.
-
-For a hosted installation, TLS termination, network access controls, persistent storage, process supervision, and provider credentials must be supplied by the deployment environment. These are deployment responsibilities, not implemented repository components.
-
-## 3. Component responsibilities and source map
+## 2. Component responsibilities and source map
 
 | Source file | Responsibility |
 | --- | --- |
@@ -87,7 +50,7 @@ For a hosted installation, TLS termination, network access controls, persistent 
 | `benchmarks/` | Retrieval comparison, factual-quality evaluation and pipeline cache/load measurements |
 | `.github/workflows/ci.yml` | Deterministic checks and conditionally enabled live-quality gate |
 
-## 4. Application lifecycle
+## 3. Application lifecycle
 
 During FastAPI startup:
 
@@ -106,7 +69,7 @@ Dense-model initialization does not have the same graceful fallback as reranker 
 
 The file lock prevents two processes from serving the same locked store where OS locking applies. It does not coordinate separate deployments with separate filesystems. Multiple replicas are therefore not a supported scaling strategy for the current policy store.
 
-## 5. End-to-end question flow
+## 4. End-to-end question flow
 
 ```mermaid
 sequenceDiagram
@@ -148,7 +111,7 @@ The Redis lease precedes the exact cache lookup on the normal path. Consequently
 
 `skip_cache=true` bypasses cache lookup, cache writes, and request coalescing/Redis lease coordination. The HTTP API requires administrative authorization for that option. Generation capacity limits still apply.
 
-### 5.1 Admission and concurrency
+### 4.1 Admission and concurrency
 
 The default per-client limit is 20 chat requests per 60-second fixed window. Clients are identified by `request.client.host`. The limiter keeps at most 4,096 active client records and rejects new clients when that capacity is full. Reverse-proxy address handling must preserve the intended client identity if deployed behind a proxy.
 
@@ -160,9 +123,9 @@ The generation semaphore defaults to two concurrent executions and covers retrie
 
 Lease expiry, eviction, administrative cache clearing, or coordination timeout can allow duplicate computation. This is duplicate-work suppression, not exactly-once execution.
 
-## 6. Retrieval and evidence selection
+## 5. Retrieval and evidence selection
 
-### 6.1 Knowledge-base representation
+### 5.1 Knowledge-base representation
 
 The JSON root contains company metadata and a `documents` list. Each document contains `doc_id`, title, version, source reference, and chunks. The loader flattens those records into `KBChunk` objects with these fields:
 
@@ -179,7 +142,7 @@ Each document receives the first 12 hexadecimal characters of a SHA-256 hash of 
 
 The collection revision is derived from document content, not from the root `version` or `last_updated` fields. Updating a chunk through the API changes its content hash but does not automatically increment the declared document version or root timestamp.
 
-### 6.2 Keyword and dense branches
+### 5.2 Keyword and dense branches
 
 BM25 uses `k1=1.5` and `b=0.75`, indexing chunk text plus title. It tokenizes English letters, numbers and dollar-sign tokens, removes stopwords, and scores the corpus in memory. Limited typo expansion applies only to unknown alphabetic tokens of at least four characters when exactly one vocabulary term matches an allowed single-edit or adjacent-transposition pattern. Numbers are not corrected.
 
@@ -189,7 +152,7 @@ The two branches run concurrently on a shared four-thread search executor. The d
 
 Supported filters are `doc_id`, `section`, `doc_version`, and `page_number`. They are explicit equality constraints; the system does not infer filters from natural language. Because filtering occurs after each branch's top-k selection, selective filters can miss relevant chunks outside that initial pool as the corpus grows.
 
-### 6.3 Fusion, reranking and final selection
+### 5.3 Fusion, reranking and final selection
 
 Reciprocal rank fusion adds each candidate's contributions from the two ranked lists:
 
@@ -205,7 +168,7 @@ The default final context contains four passages. If the strongest hybrid candid
 
 When reranking was requested but did not actually produce rerank scores, a valid answer can still be returned, but the pipeline does not cache it under the requested reranked configuration.
 
-## 7. Generation, validation and refusals
+## 6. Generation, validation and refusals
 
 Provider selection is ordered: a nonempty Gemini key takes precedence, then a Groq key, then OpenAI-compatible configuration. The application uses Python's HTTP facilities directly rather than a provider SDK. Requests target `/chat/completions` and request JSON-object output with at most 1,600 completion tokens.
 
@@ -224,7 +187,7 @@ The audit is a second call to the configured model/provider, not an independent 
 
 Refusal reasons distinguish insufficient evidence, invalid claims/evidence, unsupported numbers, invalid audit output, audit rejection, and provider errors. A clean refusal returns HTTP 200 with `is_supported=false`. A provider-error result returns HTTP 503 and is not cached. Empty context is refused without calling the provider.
 
-## 8. Redis storage, identity and freshness
+## 7. Redis storage, identity and freshness
 
 The default namespace is `cs_rag`. Redis stores JSON values and lease tokens, not embeddings.
 
@@ -246,7 +209,7 @@ Redis eviction is server-managed. The repository's example sets `maxmemory 30mb`
 
 Cache clearing scans and deletes the entire application namespace, including answers, snapshots, and leases, and resets local counters. It preserves unrelated namespaces but is not an atomic global reset relative to concurrent requests.
 
-## 9. Policy update consistency
+## 8. Policy update consistency
 
 ```mermaid
 flowchart LR
@@ -270,7 +233,7 @@ This is an application-managed write-through-style activation sequence, not a di
 
 Redis availability is mandatory for successful policy activation even though ordinary questions and policy browsing can continue without it. Directly editing the JSON while the application is running does not reload its active indexes; use the update API or restart for externally managed changes.
 
-## 10. API contracts
+## 9. API contracts
 
 | Method and route | Access | Behavior |
 | --- | --- | --- |
@@ -315,7 +278,7 @@ Chunk IDs allow 1–200 characters; replacement text allows 1–20,000. Success 
 
 Authentication accepts `X-Admin-Token` or `Authorization: Bearer <token>`. Comparison uses `secrets.compare_digest`. Missing or known placeholder admin configuration disables administrative actions with 503; invalid credentials return 401. Invalid request schemas normally produce 422, explicit blank/unknown-chunk checks produce 400, rate limiting produces 429 with `Retry-After: 60`, and generation-capacity rejection produces 503 with `Retry-After: 5`.
 
-## 11. Frontend behavior
+## 10. Frontend behavior
 
 The browser submits one question at a time with `fetch`, renders text through DOM text nodes, and turns recognized citation numbers into buttons that open evidence dialogs. It also displays policy documents, answer-copy controls, a retry action, and cache performance statistics.
 
@@ -325,7 +288,7 @@ The visible message list resembles a conversation, but requests contain only the
 
 Unsupported answers show support guidance and optionally a validated HTTPS contact link. The interface does not create a support ticket. Non-2xx API responses are generally displayed as generic errors rather than rendering their full structured response body.
 
-## 12. Configuration and runtime dependencies
+## 11. Configuration and runtime dependencies
 
 The pipeline loads the repository-root `.env` through `python-dotenv`. Existing process environment values take precedence under the default loader behavior. Restart the server after configuration changes.
 
@@ -362,7 +325,7 @@ python run.py
 The connectivity check requires Redis; the web application can still start in degraded cache mode. Retrieval model weights are loaded from the local model cache first and downloaded if necessary. The policy directory must be writable for the lock file and administrative updates.
 
 
-## 13. Capacity, trade-offs and future changes
+## 12. Capacity, trade-offs and future changes
 
 The design suits a small, curated policy corpus and a single application instance. Dense vectors require approximately `4 × chunk_count × embedding_dimension` bytes for the float32 matrix, excluding models, Python objects, temporary arrays, and indexes. Search scores the corpus and sorts results; corpus growth increases CPU and memory demand.
 
@@ -382,7 +345,7 @@ The following are **proposed extensions, not existing behavior**:
 | Policy governance | Add version history, audit records, rollback and concurrent-edit checks | Current update API overwrites one chunk without a durable history |
 | Quality improvements | Broaden evaluation data and human review of omissions/conflicts | Model audit and regex checks do not guarantee complete correctness |
 
-## 14. Source references
+## 13. Source references
 
 All links below are pinned to the inspected commit so this document remains traceable if `main` changes.
 

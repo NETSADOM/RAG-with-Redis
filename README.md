@@ -71,41 +71,6 @@ The file lock prevents two processes from serving the same locked store where OS
 
 ## 4. End-to-end question flow
 
-```mermaid
-sequenceDiagram
-    participant B as Browser
-    participant A as FastAPI
-    participant P as Pipeline
-    participant C as Redis
-    participant R as Retrieval and reranker
-    participant L as LLM provider
-    B->>A: POST /api/chat
-    A->>A: Validate, authorize bypass if requested, rate-limit
-    A->>P: answer_question
-    P->>P: Join or create matching in-flight Future
-    P->>C: Acquire expiring answer lease
-    P->>P: Snapshot revision and indexes
-    P->>C: GET exact answer key
-    alt Eligible cached answer exists
-        C-->>P: Answer, citations and retrieved context
-    else Miss or Redis unavailable
-        P->>P: Acquire generation slot without waiting
-        P->>R: Parallel BM25 and dense search; fuse; rerank
-        R-->>P: Up to four selected passages
-        P->>L: Generate claims with exact supporting quotes
-        L-->>P: Structured claims
-        P->>P: Check schema, source membership, quotes and numbers
-        P->>L: Audit complete claims against selected context
-        L-->>P: Supported flag and unresolved-issue arrays
-        P->>P: Build cited answer or refusal
-        opt Supported and cache-eligible
-            P->>C: SET answer with TTL
-        end
-    end
-    P->>C: Release lease if ownership still matches
-    P-->>A: SupportRAGResponse
-    A-->>B: JSON answer or error
-```
 
 The Redis lease precedes the exact cache lookup on the normal path. Consequently, a cache hit avoids retrieval and generation but is not necessarily a single Redis operation end to end. The answer lookup itself uses one `GET`.
 
